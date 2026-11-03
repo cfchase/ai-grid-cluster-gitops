@@ -93,8 +93,10 @@ spec:
             {{ $signalsHost = $ingress.routerCanonicalHostname }}{{ end }}
             {{ end }}
             {{ end }}
-            {{ if or (not $gatewayHost) (not $signalsHost) }}
-            {{ fail "waiting for admitted gateway and signals Routes" }}{{ end }}
+            {{ if not $signalsHost }}
+            {{ fail "waiting for an admitted signals Route" }}{{ end }}
+            {{ if and $gateway (not $gatewayHost) }}
+            {{ fail "waiting for the provider gateway Route to be admitted" }}{{ end }}
             - complianceType: musthave
               objectDefinition:
                 apiVersion: grid.praxis.fast/v1alpha1
@@ -103,11 +105,13 @@ spec:
                   name: {{ printf "%q" $site }}
                 spec:
                   gridNetworkRef: grid
+                  {{- if $gatewayHost }}
                   gatewayEndpoint:
                     address: {{ printf "%q" (printf "%s:443" $gatewayHost) }}
                     tls:
                       mode: Mutual
                       serverName: {{ printf "%q" $gateway.spec.host }}
+                  {{- end }}
                   signalsEndpoint:
                     address: {{ printf "%q" (printf "%s:443" $signalsHost) }}
                     serverName: {{ printf "%q" $signals.spec.host }}
