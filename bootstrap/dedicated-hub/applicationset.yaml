@@ -39,6 +39,22 @@ spec:
           deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
           deploymentRevision: HEAD # DEPLOYMENT_REVISION
           deploymentPath: deployment # DEPLOYMENT_PATH
+          templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          templateRevision: HEAD
+    # The deployment's own apps: one Application per <path>/apps/*.yaml in the
+    # deployment repository, in the format of apps/*/application.yaml. With the
+    # default path nothing matches.
+    - git:
+        repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
+        revision: HEAD # DEPLOYMENT_REVISION
+        files:
+          - path: deployment/apps/*.yaml # DEPLOYMENT_PATH
+        values:
+          deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
+          deploymentRevision: HEAD # DEPLOYMENT_REVISION
+          deploymentPath: deployment # DEPLOYMENT_PATH
+          templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          templateRevision: HEAD
   template:
     metadata:
       name: '{{.metadata.name}}'
@@ -55,7 +71,9 @@ spec:
   # Limitador runs on the sites, so limitador-redis leaves out its storage config.
   # rhoai's source is a kustomization (apps/rhoai/application.yaml), so a patch
   # deletes the binding. Apps name the deployment repository as
-  # @deploymentRepoURL@, @deploymentRevision@ and @deploymentPath@, replaced here.
+  # @deploymentRepoURL@, @deploymentRevision@ and @deploymentPath@, and this
+  # repository as @templateRepoURL@ and @templateRevision@, replaced here.
+  # A deployment's app must not take one of the names above.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "acm" }}
@@ -75,4 +93,4 @@ spec:
     {{- if eq .metadata.name "rhoai" }}
     {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
     {{- end }}
-    spec: {{ $spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath }}
+    spec: {{ $spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath | replace "@templateRepoURL@" .values.templateRepoURL | replace "@templateRevision@" .values.templateRevision }}
