@@ -13,6 +13,13 @@ created by the shared GitOpsCluster integration, including `local-cluster`.
 The hub uses Argo CD's in-cluster destination so the controller's
 ServiceAccount, rather than the ACM addon ServiceAccount, applies its RBAC.
 
+A hub bootstrapped with a deployment repository (`DEPLOYMENT_REPO_URL`,
+[hub onboarding](../docs/acm/hub-onboarding/README.md)) reads
+`<DEPLOYMENT_PATH>/cluster-admins.yaml` from it after [`values.yaml`](values.yaml).
+Its `cluster_admins` list replaces this repository's; `cluster_admins: []` grants
+no one. The chart fails when neither file defines `cluster_admins`, so a lost
+values file can't revoke every admin.
+
 ## Submariner gateway nodes
 
 The `submariner-gateway-nodes` policy is distributed to every cluster in the

@@ -1,0 +1,6 @@
+# A kustomization so cluster-config/application.yaml can hand the deployment
+# repository to the ApplicationSet with a patch.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 00-applicationset.yaml

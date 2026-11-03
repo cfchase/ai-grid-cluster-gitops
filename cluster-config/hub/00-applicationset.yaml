@@ -26,14 +26,21 @@ spec:
           path: cluster-config/chart
           helm:
             releaseName: cluster-admins
+            # A deployment's cluster-admins.yaml replaces this repository's list
+            # (Helm replaces lists). The chart fails if neither file names one.
+            ignoreMissingValueFiles: true
             valueFiles:
               - $values/cluster-config/values.yaml
+              - $deployment/{{ .values.deploymentPath }}/cluster-admins.yaml
             parameters:
               - name: hubResources.enabled
                 value: '{{ eq .name "local-cluster" | toString }}'
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
           ref: values
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          ref: deployment
       destination:
         server: '{{ if eq .name "local-cluster" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
         namespace: openshift-gitops
