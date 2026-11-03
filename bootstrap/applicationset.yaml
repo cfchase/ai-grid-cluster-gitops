@@ -11,8 +11,8 @@ spec:
     preserveResourcesOnDeletion: false
   generators:
     - git:
-        repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-        revision: HEAD
+        repoURL: https://github.com/cfchase/ai-grid-tenant.git
+        revision: demo-template
         files:
           - path: apps/*/application.yaml
           # Only the dedicated-hub profile installs cert-manager, registers clusters and runs MaaS on a site.
@@ -28,25 +28,25 @@ spec:
         # each value marked # DEPLOYMENT_* from its environment; the defaults name
         # this repository and a path it doesn't have, so nothing is read.
         values:
-          deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
-          deploymentRevision: HEAD # DEPLOYMENT_REVISION
+          deploymentRepoURL: https://github.com/cfchase/ai-grid-tenant.git # DEPLOYMENT_REPO_URL
+          deploymentRevision: demo-template # DEPLOYMENT_REVISION
           deploymentPath: deployment # DEPLOYMENT_PATH
-          templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          templateRevision: HEAD
+          templateRepoURL: https://github.com/cfchase/ai-grid-tenant.git
+          templateRevision: demo-template
     # The deployment's own apps: one Application per <path>/apps/*.yaml in the
     # deployment repository, in the format of apps/*/application.yaml. With the
     # default path nothing matches.
     - git:
-        repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
-        revision: HEAD # DEPLOYMENT_REVISION
+        repoURL: https://github.com/cfchase/ai-grid-tenant.git # DEPLOYMENT_REPO_URL
+        revision: demo-template # DEPLOYMENT_REVISION
         files:
           - path: deployment/apps/*.yaml # DEPLOYMENT_PATH
         values:
-          deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
-          deploymentRevision: HEAD # DEPLOYMENT_REVISION
+          deploymentRepoURL: https://github.com/cfchase/ai-grid-tenant.git # DEPLOYMENT_REPO_URL
+          deploymentRevision: demo-template # DEPLOYMENT_REVISION
           deploymentPath: deployment # DEPLOYMENT_PATH
-          templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          templateRevision: HEAD
+          templateRepoURL: https://github.com/cfchase/ai-grid-tenant.git
+          templateRevision: demo-template
   template:
     metadata:
       name: '{{.metadata.name}}'

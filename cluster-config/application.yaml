@@ -6,8 +6,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-    targetRevision: HEAD
+    repoURL: https://github.com/cfchase/ai-grid-tenant.git
+    targetRevision: demo-template
     path: cluster-config/hub
     # The cluster-config ApplicationSet reads the admin list from the
     # deployment repository when it has one. The root ApplicationSet fills in

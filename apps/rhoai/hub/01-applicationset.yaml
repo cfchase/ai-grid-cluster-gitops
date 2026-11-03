@@ -47,8 +47,8 @@ spec:
     spec:
       project: default
       sources:
-        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+        - repoURL: https://github.com/cfchase/ai-grid-tenant.git
+          targetRevision: demo-template
           ref: values
         # The deployment repository (bootstrap.sh DEPLOYMENT_REPO_URL,
         # DEPLOYMENT_REVISION, DEPLOYMENT_PATH), for per-cluster values.
@@ -96,15 +96,15 @@ spec:
               - name: dependencies.clusterObservability.enabled
                 value: '{{ if eq (index .metadata.labels "local-cluster") "true" }}false{{ else }}auto{{ end }}'
         # The enrollment service runs on the hub, so a managed cluster excludes these.
-        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+        - repoURL: https://github.com/cfchase/ai-grid-tenant.git
+          targetRevision: demo-template
           path: apps/rhoai/local-cluster
           directory:
             exclude: '{{ if eq (index .metadata.labels "local-cluster") "true" }}{{ else }}*{{ end }}'
         # MaaS sites (role ingress or combined, the hub included) get the Authorino
         # trust patch; an inference site runs no MaaS and renders nothing.
-        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+        - repoURL: https://github.com/cfchase/ai-grid-tenant.git
+          targetRevision: demo-template
           path: apps/rhoai/maas-sites
           helm:
             releaseName: maas-sites
@@ -118,8 +118,8 @@ spec:
             parameters:
               - name: enabled
                 value: '{{ if eq (index .metadata.labels "ai-grid/role") "inference" }}false{{ else }}true{{ end }}'
-        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+        - repoURL: https://github.com/cfchase/ai-grid-tenant.git
+          targetRevision: demo-template
           path: apps/rhoai/catalog
           helm:
             releaseName: rhoai-nightly-catalog
