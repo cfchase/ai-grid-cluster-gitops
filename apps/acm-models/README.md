@@ -64,8 +64,38 @@ cluster's catalog sync until it's fixed (`FailOnSharedResource`).
 
 Deletion differs by design. Deleting the models ApplicationSet, or a cluster's folder, leaves its models running
 (`preserveResourcesOnDeletion`). Deleting an ingress or subscriptions Application deletes its MaaS objects with
-it (the resources finalizer), so no access outlives its Application. A teardown can therefore leave a model running
-with no MaaS entry: delete its LLMInferenceService by hand.
+it (the resources finalizer), except the MaaSSubscriptions. A teardown can therefore leave a model running with no
+MaaS entry: delete its LLMInferenceService by hand.
+
+MaaS revokes every API key of a MaaSSubscription that is deleted on any cluster, in the key database the ingress
+clusters share. So each MaaSSubscription carries the Argo CD sync option `Delete=false`: `maas/policies/` sets it on
+each organization's own (delivered by `acm-models-maas`, which also deletes what it delivered), and the console's
+backend writes it on every catalog subscription, but only from the release that adds it (pull request 73 of
+ai-grid-provider-backend); a catalog written before that has it only after `hack/add-subscription-delete-false.sh`
+from that repository has run on the catalog and every ingress cluster has synced the result. Each also carries the
+label `ai-grid/kept-on-removal: "true"`, which that backend reads through ACM Search before it lets a cluster leave
+the grid. When a cluster is removed from AI Grid, it keeps its MaaSSubscriptions, unmanaged, and their keys stay valid
+on the other clusters; it loses the MaaSAuthPolicies, so it stops serving those users. `Delete=false` doesn't affect
+pruning: a subscription deleted in Git is still pruned from every cluster, and its keys are revoked.
+
+`Delete=false` covers a cluster leaving the grid, not a role change to `inference`: that role turns MaaS off on the
+cluster, and deleting its AITenant revokes every API key of the tenant.
+
+To delete a kept MaaSSubscription on a cluster that left, remove its finalizer first, or MaaS revokes its keys on
+every cluster, including those of a subscription that still exists elsewhere under the same name:
+
+```sh
+oc -n models-as-a-service get maassubscription <name> -o json \
+  | jq '.metadata.finalizers = ((.metadata.finalizers // [])
+      - ["maas.opendatahub.io/subscription-cleanup"])' \
+  | oc replace -f -
+oc -n models-as-a-service delete maassubscription <name>
+```
+
+This removes only MaaS's finalizer, and works when there is none; `oc replace` fails, rather than overwriting, if the
+object changed since it was read.
+
+Do the same before uninstalling MaaS or deleting `models-as-a-service` on that cluster.
 
 `apps/ai-grid-policies` reports the catalog's state back to the hub, where the console reads it:
 
