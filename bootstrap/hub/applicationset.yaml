@@ -44,6 +44,7 @@ spec:
           - path: apps/gitops-config/application.yaml
           - path: apps/grid-bootstrap/application.yaml
           - path: apps/keycloak/application.yaml
+          - path: apps/keycloak-external-services/application.yaml
           - path: apps/limitador-redis/application.yaml
           - path: apps/maas-db/application.yaml
           - path: apps/metallb/application.yaml

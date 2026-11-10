@@ -1,6 +1,6 @@
 # Reads the external-services cluster's own Secrets where it is applied, so
-# nothing about this cluster is copied through the hub. Keycloak's public-URL
-# Policy is apps/keycloak's (apps/keycloak/external-services-policy).
+# nothing about this cluster is copied through the hub. Keycloak there, and
+# its public-URL Policy, are the separate component apps/keycloak-external-services.
 apiVersion: policy.open-cluster-management.io/v1
 kind: Policy
 metadata:
