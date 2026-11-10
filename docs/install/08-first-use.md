@@ -150,7 +150,7 @@ oc --context "$SITE_CONTEXT" get llminferenceservices,maassubscriptions,maasauth
 You should see the model `Ready` and the subscription and its auth policy on the site. In the console, **Models**
 shows the model **Ready** and **Available**, and **Subscriptions** shows the subscription **Active**. If no catalog Applications
 appear after the catalog's first commits, refresh the ApplicationSets once
-([model delivery](components/model-delivery.md)).
+([model delivery](hub/05-console-and-model-delivery.md#model-delivery)).
 
 ## 6. Call the model as a tenant
 

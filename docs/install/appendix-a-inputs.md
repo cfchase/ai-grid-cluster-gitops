@@ -24,5 +24,5 @@ documents the same contract for library maintainers.
 | `ai-grid/enabled` | `true` | Makes the cluster a grid site |
 | `ai-grid/role` | `ingress`, `inference`, `combined` | What the site installs; without it nothing installs |
 | `location` | Your choice | Shown in the console; model placement can select it |
-| `ai-grid/metallb-pool` | `FIRST-LAST` | A MetalLB address range ([load balancers](components/load-balancers.md)) *(Unverified.)* |
+| `ai-grid/metallb-pool` | `FIRST-LAST` | A MetalLB address range ([load balancers](spokes/networking.md#load-balancers)) *(Unverified.)* |
 | `ai-grid/external-services` | `true` | Runs MaaS's shared state on that cluster instead of the hub *(Unverified.)* |

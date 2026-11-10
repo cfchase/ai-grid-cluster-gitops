@@ -22,21 +22,21 @@ Each entry gives the symptom, the cause and the fix. Component pages list more u
 26.6 reject.
 
 **Fix:** run community Keycloak 26.8.0 for tenants, as the library and the example do
-([Keycloak](components/keycloak.md#known-issues)).
+([Keycloak](hub/04-tenant-identity.md#known-issues-1)).
 
 ## Tenants get certificate errors on the MaaS hostname
 
 **Cause:** the MaaS gateway presents its in-cluster service certificate on the public hostname.
 
 **Fix:** give the gateway a trusted certificate through the site's values file
-([step 4, part 1](06-join-grid.md#1-add-the-sites-values); [MaaS gateway certificate](components/maas-certificate.md)).
+([step 4, part 1](06-join-grid.md#1-add-the-sites-values); [MaaS gateway certificate](spokes/maas-certificate.md)).
 
 ## Every model call returns `403`, "access denied to requested subscription"
 
 **Cause:** the token's `groups` are already prefixed with the organization ID (`ORG_ID/ai-grid-users`). MaaS adds the
 prefix itself and drops groups that already carry one.
 
-**Fix:** emit plain group names from the IdP ([tenant identity provider](components/tenant-idp.md)).
+**Fix:** emit plain group names from the IdP ([tenant identity provider](hub/04-tenant-identity.md#tenant-identity-provider)).
 
 ## A chat call returns `400` "Field required: messages" or a template error
 
@@ -50,7 +50,7 @@ endpoint.
 **Cause:** the pod runs `kc.sh import` before `kc.sh start`, and the import refuses to migrate an older database.
 
 **Fix:** use `strategy: Recreate`, back up the database before a version change, and see
-[Keycloak](components/keycloak.md#known-issues).
+[Keycloak](hub/04-tenant-identity.md#known-issues-1).
 
 ## An API key reaches a model outside its subscription, or is refused with `403`
 
@@ -113,14 +113,14 @@ doesn't exist.
 
 **Cause:** the dashboards come from the observability components, which you didn't select.
 
-**Fix:** none needed if you skipped observability on purpose; see [observability](components/observability.md) and
+**Fix:** none needed if you skipped observability on purpose; see [observability](hub/07-observability.md) and
 [known gaps](appendix-c-gaps.md).
 
 ## A model's catalog Applications don't appear
 
 **Cause:** the catalog ApplicationSets' git generator didn't pick up the catalog's first commits.
 
-**Fix:** refresh them once ([model delivery](components/model-delivery.md)).
+**Fix:** refresh them once ([model delivery](hub/05-console-and-model-delivery.md#model-delivery)).
 
 ## A deleted model stays on the site for several minutes
 
@@ -134,10 +134,10 @@ model's pods end. On the tested site every object was gone about 9 minutes after
 **Cause:** one of the MaaS gateway load balancer's addresses doesn't answer, probably a zone with no gateway pod behind
 it.
 
-**Fix:** see [load balancers](components/load-balancers.md).
+**Fix:** see [load balancers](spokes/networking.md#load-balancers).
 
 ## Hub Applications for Submariner, `limitador-redis` or the MaaS database stay unhealthy
 
 **Cause:** they wait for the first site to join.
 
-**Fix:** none needed before step 4. After a site joins, check the site's Submariner gateways ([Submariner](components/submariner.md)).
+**Fix:** none needed before step 4. After a site joins, check the site's Submariner gateways ([Submariner](hub/01-acm.md#submariner)).

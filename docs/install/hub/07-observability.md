@@ -1,9 +1,23 @@
 # Observability and usage logs
 
+| | |
+|---|---|
+| Options | On · off |
+| Example chose | Off |
+| Requires | ACM with its observability ([ACM](01-acm.md)); ODF object storage on the hub; `apps/ai-grid-policies` ([grid](02-grid.md)) |
+
+## Select it
+
+```yaml
+- path: apps/ai-grid-o11y/application.yaml
+- path: apps/ai-grid-usage-logs/application.yaml
+```
+
+
 Two components add AI Grid's dashboards and usage records on the hub. `apps/ai-grid-o11y` scrapes OpenShift AI metrics
 into ACM's Thanos, installs the Perses dashboards that the provider console's **Monitoring** page shows, and runs the
 LokiStack that stores MaaS usage logs; `apps/ai-grid-usage-logs` installs the Loki operator and tells every ingress or
-combined site where to send its usage records. Both depend on [ACM](./acm.md) observability.
+combined site where to send its usage records. Both depend on [ACM](01-acm.md#red-hat-advanced-cluster-management) observability.
 
 | | |
 |---|---|
@@ -18,7 +32,7 @@ The verified install skipped both, so every step on this page is *(Unverified.)*
 Before you select them, know their current limits:
 
 - Loki's bucket is an ObjectBucketClaim with StorageClass `openshift-storage.noobaa.io`, so it needs ODF with the
-  Multicloud Object Gateway on the hub. The [object-storage](./object-storage.md) contract doesn't cover Loki, and
+  Multicloud Object Gateway on the hub. The [object-storage](01-acm.md#object-storage) contract doesn't cover Loki, and
   there's no input for another bucket.
 - The LokiStack names StorageClass `gp3-csi`, which exists only on AWS.
 - The metrics dashboards and the Loki store are one component: you can't take the dashboards without Loki.
@@ -33,7 +47,7 @@ Then:
    - path: apps/ai-grid-usage-logs/application.yaml
    ```
 
-2. Select [ACM](./acm.md) with its observability, an ODF option, and `apps/ai-grid-policies`, which owns namespace
+2. Select [ACM](01-acm.md#red-hat-advanced-cluster-management) with its observability, an ODF option, and `apps/ai-grid-policies`, which owns namespace
    `ai-grid-policies` where the usage-log credentials live.
 
 They read only `libraryRepoURL` and `libraryRevision` and no file from your deployment repository. `ai-grid-usage-logs`

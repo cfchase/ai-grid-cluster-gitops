@@ -1,8 +1,9 @@
 # MaaS gateway certificate
 
+
 Tenants call each ingress or combined site's MaaS gateway at `https://HOSTNAME_PREFIX.APPS_DOMAIN`, so the gateway
 needs a certificate your tenants trust. Without one, the gateway presents its in-cluster service certificate and
-tenants' TLS clients reject it. [OpenShift AI](./rhoai.md) creates the gateway; [cert-manager](./cert-manager.md) is
+tenants' TLS clients reject it. [OpenShift AI](openshift-ai.md#openshift-ai-with-maas) creates the gateway; [cert-manager](../hub/00-platform-services.md#cert-manager) is
 the usual way to issue its certificate.
 
 | | |

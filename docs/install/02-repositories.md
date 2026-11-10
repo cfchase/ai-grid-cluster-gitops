@@ -33,7 +33,7 @@ Your hub installs from two repositories you own: a **deployment repository** wit
 
    You removed the example's per-site values and its own apps (its tenant IdP and one site's certificate); you add
    your own in later steps. If you'll run your own Keycloak the way the example does, also copy `example/idp` and
-   `example/apps/tenant-idp.yaml` ([tenant identity provider](components/tenant-idp.md)).
+   `example/apps/tenant-idp.yaml` ([tenant identity provider](hub/04-tenant-identity.md#tenant-identity-provider)).
 
 ## 2. Pin the library commit
 
@@ -115,7 +115,7 @@ Rules:
   both generators (28), the library URL and revision in each generator's own `repoURL` and `revision` (4), and the
   root's own check for leftover markers (1). Every one of the 32 markers is set by the steps in this section.
 - If you bring your own tenant identity provider, the `idp*` inputs point at it. If you use ours (`apps/keycloak`),
-  use the values its page gives ([Keycloak](components/keycloak.md)).
+  use the values its page gives ([Keycloak](hub/04-tenant-identity.md#keycloak)).
 
 ## 5. Fill in the values files
 
@@ -130,10 +130,10 @@ Your deployment repository holds three kinds of values file. The library reads t
    ```
 
    Use `cluster_admins: []` for none. If the file is missing, `cluster-config` fails rather than removing every
-   binding ([cluster sign-in and admins](components/cluster-sign-in.md)).
+   binding ([cluster sign-in and admins](hub/00-platform-services.md#cluster-sign-in-and-admins)).
 
 2. `values/grid-bootstrap.yaml`: `Generate` starts a new grid with a new CA; `Existing` keeps a CA you already have
-   ([grid bootstrap](components/grid-bootstrap.md)).
+   ([grid bootstrap](hub/02-grid.md#grid-bootstrap)).
 
    ```yaml
    external:
