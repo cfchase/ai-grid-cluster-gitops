@@ -52,6 +52,33 @@ endpoint.
 **Fix:** use `strategy: Recreate`, back up the database before a version change, and see
 [Keycloak](components/keycloak.md#known-issues).
 
+## An API key reaches a model outside its subscription, or is refused with `403`
+
+**Cause:** an API key is bound to the subscription it was created under, and MaaS ignores the `X-MaaS-Subscription`
+header for keys, by design. A key reaches exactly the models its subscription covers, whatever the header says, and
+gets `403` for any other model. A revoked key also gets `403`, not `401`.
+
+**Fix:** to limit what a key reaches, create it under a subscription that covers only those models
+([first use, step 5](08-first-use.md#6-call-the-model-as-a-tenant)). For a `403`, check the key's `subscription` and
+`status` with `GET https://MAAS_HOST/v1/api-keys/KEY_ID`.
+
+## The Org UI can't load models or API keys
+
+**Symptom:** a tenant signs in to the Org UI (`https://MAAS_HOST/maas-portal`), but the models page says "Unable to
+load MaaS models" and **API keys** says "Unable to load settings". The portal's calls return `401`, and the site's
+`maas-portal` pod logs `missing required header: x-forwarded-access-token`.
+
+**Cause:** on OpenShift AI 3.6 nightly builds before FBC `d0ee30a`, the gateway's portal session policy sends the
+tenant's token only as `x-forwarded-id-token`, and the portal reads `x-forwarded-access-token`
+([RHAI-21554](https://redhat.atlassian.net/browse/RHAI-21554)). The library's pinned build,
+`rhoai-3.6@sha256:19a9c77…` in `apps/rhoai/nightly.yaml`, has this bug.
+
+**Fix:** move to a library revision whose `apps/rhoai/nightly.yaml` pins FBC `d0ee30a` or later, such as `add544e`;
+ai-gateway-controller [PR 246](https://github.com/opendatahub-io/ai-gateway-controller/pull/246) restores the header.
+Until then, tenants create API keys through the MaaS API
+([first use, step 5](08-first-use.md#6-call-the-model-as-a-tenant)). Don't edit the AuthPolicy or the `maas-portal`
+Deployment by hand: their controllers revert the change.
+
 ## Calls fail with `401` or `503` after the IdP was down
 
 **Cause:** Authorino on the site cached the failed OIDC discovery or the old signing keys.

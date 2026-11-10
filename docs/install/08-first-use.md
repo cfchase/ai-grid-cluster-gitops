@@ -172,7 +172,7 @@ which generates the password into a file.
    ```
 
    The password grant must be enabled on the client (the example's realm enables it for testing). Tenants
-   normally get an API key from the Org UI instead. *(API keys: unverified.)*
+   normally use an API key instead (step 5).
 
 2. List the models:
 
@@ -191,7 +191,8 @@ which generates the password into a file.
    grep -i '^x-grid-site' "$T/h"
    ```
 
-   You should see a short reply and `x-grid-site: SITE`.
+   You should see a short reply and `x-grid-site: SITE`. With a user's token, the `X-MaaS-Subscription` header picks
+   the subscription the call runs under.
 
 4. Check the refusals:
 
@@ -200,10 +201,48 @@ which generates the password into a file.
    curl -sS -o /dev/null -w '%{http_code}\n' -H @"$T/auth" -H 'X-MaaS-Subscription: OTHER_SUBSCRIPTION' \
      -H 'Content-Type: application/json' -d '{"model":"smollm2-chat","messages":[{"role":"user","content":"Hi"}]}' \
      https://MAAS_HOST/v1/chat/completions
-   rm -rf "$T"
    ```
 
    You should see `401` without a token, and `403` with a subscription that doesn't cover the model.
+
+5. Create an API key and call the model with it. A key is bound to one subscription when you create it:
+
+   ```sh
+   (umask 077
+   curl -sS -H @"$T/auth" -H 'Content-Type: application/json' \
+     -d '{"name":"KEY_NAME","expiresIn":"1h","subscription":"SUBSCRIPTION_ID"}' \
+     https://MAAS_HOST/v1/api-keys > "$T/key.json"
+   jq -r '"Authorization: Bearer " + .key' "$T/key.json" > "$T/key-auth")
+   jq '{id, keyPrefix, subscription, expiresAt}' "$T/key.json"
+   curl -sS -H @"$T/key-auth" https://MAAS_HOST/v1/models | jq -c '[.data[].id]'
+   curl -sS -o /dev/null -w '%{http_code}\n' -H @"$T/key-auth" -H 'Content-Type: application/json' \
+     -d '{"model":"OTHER_MODEL","messages":[{"role":"user","content":"Hi"}]}' https://MAAS_HOST/v1/chat/completions
+   ```
+
+   You should see the key's `id`, `keyPrefix`, `subscription` and `expiresAt`; the models that subscription covers;
+   and `403` for a model it doesn't cover. Keep the `id` as `KEY_ID`. The chat call in step 3, with `$T/key-auth` in
+   place of `$T/auth`, returns a reply and an `x-grid-site` header.
+
+   A key ignores the `X-MaaS-Subscription` header and always uses the subscription it's bound to: a key bound to one
+   subscription still reaches its models with another subscription named in the header. This is MaaS's design
+   (its e2e test
+   [`test_api_key_ignores_subscription_header`](https://github.com/opendatahub-io/models-as-a-service/blob/8d30ae9adcda2a9cddc5c33b3a3121037c72a851/test/e2e/tests/test_models_endpoint.py#L1867-L1875)).
+   To limit what a key reaches, create it under a subscription that covers only those models; for other models,
+   create another key under another subscription.
+
+   Tenants can also create keys in the Org UI, at `https://MAAS_HOST/maas-portal` under **API keys**. On OpenShift AI
+   builds before FBC `d0ee30a`, which include the library's pinned build, the Org UI can't load models or keys
+   ([troubleshooting](10-troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).
+
+6. Revoke the key:
+
+   ```sh
+   curl -sS -o /dev/null -w '%{http_code}\n' -X DELETE -H @"$T/auth" https://MAAS_HOST/v1/api-keys/KEY_ID
+   curl -sS -o /dev/null -w '%{http_code}\n' -H @"$T/key-auth" https://MAAS_HOST/v1/models
+   rm -rf "$T"
+   ```
+
+   You should see `200` for the delete, and `403`, not `401`, for a call with the revoked key.
 
 Replace the following throughout:
 
@@ -212,6 +251,8 @@ Replace the following throughout:
 - `TENANT_USER`, `TENANT_PASSWORD_FILE`: the tenant user and a file holding their password.
 - `MAAS_HOST`: the ingress site's MaaS hostname, `PREFIX.apps.CLUSTER_DOMAIN`.
 - `SUBSCRIPTION_ID`, `OTHER_SUBSCRIPTION`: the subscription you created, and one that doesn't include the model.
+- `KEY_NAME`: a name for the API key. `KEY_ID`: the key's `id` from step 5.
+- `OTHER_MODEL`: a deployed model that `SUBSCRIPTION_ID` doesn't cover. With only one model, skip that call.
 
 ## 7. Delete what you created (optional)
 
@@ -229,3 +270,4 @@ the model's pods end ([troubleshooting](10-troubleshooting.md#a-deleted-model-st
 
 - A tenant's chat call returns `200` with an `x-grid-site` header.
 - Calls without a token get `401`, and calls under the wrong subscription get `403`.
+- An API key reaches only its subscription's models, and a revoked key gets `403`.

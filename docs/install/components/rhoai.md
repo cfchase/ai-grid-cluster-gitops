@@ -129,6 +129,13 @@ MaaS gateway certificate errors and the cleartext port 80 listener are on the
 **Cause:** Authorino cached the failed OIDC discovery.
 **Workaround:** on the site, restart Authorino: `oc -n kuadrant-system rollout restart deployment authorino`.
 
+**Symptom:** the Org UI signs a tenant in, then can't load models ("Unable to load MaaS models") or API keys; its
+calls return 401.
+**Cause:** OpenShift AI 3.6 nightlies before FBC `d0ee30a`, including the library's pinned `19a9c77`, send the
+portal's token in the wrong header ([RHAI-21554](https://redhat.atlassian.net/browse/RHAI-21554)).
+**Workaround:** pin FBC `d0ee30a` or later; until then, create API keys through the MaaS API
+([troubleshooting](../10-troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).
+
 **Symptom:** about one call in six fails the TLS handshake or hangs.
 **Cause:** an address of the gateway's load balancer is in a zone with no gateway pod (infrastructure).
 **Workaround:** fix the load balancer's zones, or run gateway pods in every zone it serves.
