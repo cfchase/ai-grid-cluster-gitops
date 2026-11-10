@@ -87,7 +87,7 @@ external:
 
 Nothing else to run. The root ApplicationSet picks up [apps/grid-bootstrap/application.yaml](../../../apps/grid-bootstrap/application.yaml), which installs the chart on the hub with both files.
 
-Onboard a cluster by labelling its ManagedCluster `ai-grid/enabled=true` and `ai-grid/role` (`ingress`, `inference` or `combined`). Together they install RHOAI in that role, and `ai-grid/enabled` joins the grid; without a role nothing is installed ([apps/ai-grid-spokes](../../../apps/ai-grid-spokes/README.md)). Unlabelling withdraws it from the grid and stops managing those workloads, but does not uninstall them, and keeps its GridNetwork; its MaaS database replica and the catalog's MaaS objects and subscriptions there are the exceptions, deleted because they hold or grant tenants' access.
+Onboard a cluster by labelling its ManagedCluster `ai-grid/enabled=true` and `ai-grid/role` (`ingress`, `inference` or `combined`). Together they install RHOAI in that role, and `ai-grid/enabled` joins the grid; without a role nothing is installed ([apps/ai-grid-spokes](../../../apps/ai-grid-spokes/README.md)). Unlabelling stops managing those workloads but does not uninstall them, and does not withdraw the site from the grid (its GridSite stays Connected and Available; withdrawal isn't designed yet), and keeps its GridNetwork; its MaaS database replica and the catalog's MaaS objects and subscriptions there are the exceptions, deleted because they hold or grant tenants' access.
 
 The hub is a site only if labelled. Proposed: managedClusters.includeHub, default false, excludes the hub from membership whatever its labels.
 

@@ -95,6 +95,13 @@ doesn't exist.
 
 **Fix:** refresh them once ([model delivery](components/model-delivery.md)).
 
+## A deleted model stays on the site for several minutes
+
+**Cause:** the model's ExternalModel keeps its finalizer `inference.opendatahub.io/external-model-cleanup` until the
+model's pods end. On the tested site every object was gone about 9 minutes after the delete.
+
+**Fix:** none needed; wait. Check with `oc --context SITE_CONTEXT get externalmodels,llminferenceservices -A`.
+
 ## About one call in six fails the TLS handshake
 
 **Cause:** one of the MaaS gateway load balancer's addresses doesn't answer, probably a zone with no gateway pod behind

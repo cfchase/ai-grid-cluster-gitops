@@ -4,11 +4,9 @@ In this section you create an organization, deploy a model to a site, subscribe 
 call it as a tenant. The provider console writes the model and subscription to your catalog repository, and Argo CD
 delivers them to the site.
 
-The tested run made each console call through the console's API, the same calls its pages make, with the example's
-library's [`scripts/console-call.sh`](../../scripts/console-call.sh).
-The page steps are given too, and are *(Unverified.)* in this release of the guide.
-
-`console-call.sh` signs in as an OpenShift user through the htpasswd provider and makes one call:
+Each step gives the console's pages first, as tested in a browser on 2026-11-10. The same calls through the console's
+API follow as an alternative, with the library's [`scripts/console-call.sh`](../../scripts/console-call.sh), which signs
+in as an OpenShift user through the htpasswd provider and makes one call:
 
 ```sh
 ../library/scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE METHOD 'JSON'
@@ -30,8 +28,20 @@ The **Monitoring** page shows dashboards only if you selected observability; wit
 
 ## 2. Create an organization
 
-In the console, go to **Organizations** and click **Create organization**. Enter a name and an email domain.
-*(Unverified: the page and its button were checked, not the create.)*
+1. Go to **Organizations** and click **Create organization**. A three-step wizard opens: **Organization details**,
+   **Identity provider**, **Review**.
+2. In **Organization details**, enter the **Name**. Click **Add domain** and enter the organization's email domain in
+   **Domain 1**. Click **Next**.
+3. In **Identity provider**, link the organization to the tenant's own OIDC provider: **Title** (shown on the login
+   page), **Client ID**, **Client secret reference** (the name of the Secret that holds the client secret), **Issuer**,
+   and under **OIDC endpoints** the **Authorization URL**, **Token URL** and **JWKS URL** (required while
+   **Validate signature** is on). You can leave every field empty: an organization with no identity provider is
+   accepted, and its users then sign in with accounts in your tenant Keycloak itself. Click **Next**.
+   *(Unverified: signing in through a linked identity provider.)*
+4. In **Review**, check the values and click **Create organization**.
+
+You should see the organization in the **Organizations** list, with its primary domain and its identity provider, or
+`—` for none.
 
 Or through the API:
 
@@ -46,16 +56,30 @@ and tokens carry it as `org_id`.
 If you see `HTTP 400` with a Keycloak error, your Keycloak is the Red Hat build 26.4 or 26.6, which rejects the
 console's request; see [troubleshooting](10-troubleshooting.md#organization-create-fails-with-bad-request).
 
-Linking the organization to the tenant's own identity provider is done in the console's organization form or in
-Keycloak. *(Unverified.)*
-
 ## 3. Deploy a model
 
 Use a chat model: the MaaS gateway sends completions to the chat endpoint, so a model without a chat template, such
 as OPT-125m, answers `400`. The tested model is SmolLM2-135M-Instruct on CPU.
 
-In the console, go to **Models** and click **Deploy model**. Choose the model URI, the runtime image, resources and
-the site. *(Unverified: the page and its button were checked, not the deploy.)*
+1. Go to **Models** and click **Deploy model**. A four-step wizard opens: **Source**, **Deployment**, **Clusters**,
+   **Review**.
+2. In **Source**, enter the **Model URI**, such as `hf://HuggingFaceTB/SmolLM2-135M-Instruct`. Click **Next**.
+3. In **Deployment**:
+   - **Model name**: prefilled from the URI. Tenants send the resource name shown under it as `model` in their
+     requests.
+   - **Hardware**: **NVIDIA GPU** (the default) or **CPU only**. With NVIDIA GPU, **Runtime image** is optional and
+     empty means the cluster's default vLLM image. With CPU only, **Runtime image** is required; the tested CPU image is
+     `registry.redhat.io/rhaii/vllm-cpu-rhel9@sha256:0ec0f5ff9a5ff263f58db0cfb19e3d7eef24b94c2d8629fe5145f5a8747e28c9`.
+   - **Replicas** (default `1`), **CPU** (default `2`) and **Memory** (default `16Gi`). The tested CPU model used `4`
+     CPU and `8Gi`.
+
+   Click **Next**.
+4. In **Clusters**, pick each site the model runs on. Click **Next**.
+5. In **Review**, check the values and click **Deploy**. A CPU-only model on a site with GPUs shows a warning; you can
+   still deploy.
+
+You should see the model in the **Models** list with status **Saved to Git**: the console committed it to your catalog
+repository. About 5 to 7 minutes later it shows **Ready** and **Available**.
 
 Or through the API:
 
@@ -85,8 +109,16 @@ You should see `HTTP 200`, and a new commit in your catalog repository under the
 A subscription gives an organization's group access to models, with a token rate limit. Give the group name as
 plain text, such as `ai-grid-users`; MaaS prefixes it with the organization ID.
 
-In the console, go to **Subscriptions** and click **Create subscription**. Choose the organization, the group and the
-model. *(Unverified: the page and its button were checked, not the create.)*
+1. Go to **Subscriptions** and click **Create subscription**.
+2. Enter the **Name**, pick the **Organization**, and set the **Priority** (default `0`; higher numbers win).
+3. In **Groups**, type the group name, such as `ai-grid-users`, and pick **Add group "ai-grid-users"**.
+4. Click **Add models**, tick the model in the dialog, and click **Add models**.
+5. The model's row requires a token limit. Click **Add token limit**, set **Tokens**, **Per** and the time unit
+   (defaults `1000` per `1` `hour`), and click **Save**.
+6. Click **Create subscription**.
+
+You should see the subscription in the **Subscriptions** list with status **Pending**, "Setting up subscription", and
+**Active** about 5 minutes later.
 
 Or through the API:
 
@@ -180,6 +212,18 @@ Replace the following throughout:
 - `TENANT_USER`, `TENANT_PASSWORD_FILE`: the tenant user and a file holding their password.
 - `MAAS_HOST`: the ingress site's MaaS hostname, `PREFIX.apps.CLUSTER_DOMAIN`.
 - `SUBSCRIPTION_ID`, `OTHER_SUBSCRIPTION`: the subscription you created, and one that doesn't include the model.
+
+## 7. Delete what you created (optional)
+
+In each list, open the row's menu and click **Delete**, then type the name to confirm. Delete in this order:
+
+1. The subscription. Its authorization policy is deleted with it.
+2. The model. It's removed from every site it runs on.
+3. The organization, with its identity provider configuration.
+
+Each delete is a commit to your catalog repository (the organization lives in Keycloak). On the site, a model takes
+about 9 minutes to go: its ExternalModel waits on the finalizer `inference.opendatahub.io/external-model-cleanup` until
+the model's pods end ([troubleshooting](10-troubleshooting.md#a-deleted-model-stays-on-the-site-for-several-minutes)).
 
 ## Checkpoint
 

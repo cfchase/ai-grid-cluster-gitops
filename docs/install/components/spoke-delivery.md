@@ -78,15 +78,18 @@ the site's Applications (`rhoai-*` and the others) a minute or two after you lab
 
 ### Remove a site
 
-To take a site out of the grid, remove its `ai-grid/enabled` label (the console's **Remove** does the same):
+To remove a site from AI Grid management, remove its `ai-grid/enabled` label (the console's **Remove** does the same):
 
 ```sh
 oc label managedcluster SITE ai-grid/enabled-
 ```
 
-The site leaves the Placements, and its Applications go at the next poll, in about a minute. *(Unverified.)*
+The site leaves the Placements, and its Applications go at the next poll: on the tested hub, within 30 seconds, and
+the `maas-db` replica's Application about 3 minutes later. The console shows the site as **Not added**.
 
-- Withdrawn: grid membership; grid bootstrap withdraws the site's peer records.
+- Not withdrawn: grid membership. On the tested site the GridSite stayed `Connected` and `Available` for the whole
+  7 minutes it was unlabelled. Withdrawing a site from the grid isn't designed yet
+  ([known gaps](../appendix-c-gaps.md)).
 - Stays installed, no longer managed: OpenShift AI, the provider gateway and the catalog's models, because the
   ApplicationSets set `preserveResourcesOnDeletion`.
 - Deleted: the site's `maas-db` replica, and the catalog's MaaS objects and subscriptions on that site, so no tenant
@@ -95,7 +98,7 @@ The site leaves the Placements, and its Applications go at the next poll, in abo
   and the tenant objects. Rotate the shared credentials after you remove a site.
 
 Applications that go to every managed cluster, such as Submariner, stay until you detach the cluster from ACM.
-Removing only the role has the same effect on the platform, but the cluster stays a grid member.
+Removing only the role has the same effect on the platform; either way the cluster stays a grid member.
 
 ## Bring your own
 
