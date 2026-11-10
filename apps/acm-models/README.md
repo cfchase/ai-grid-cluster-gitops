@@ -38,10 +38,10 @@ Grid operator is successfully scraping provider metrics.
 
 The provider console
 ([ai-grid-cloud/ai-grid-provider-console](https://github.com/ai-grid-cloud/ai-grid-provider-console))
-saves models and subscriptions as commits to a catalog repository,
-[ai-grid-cloud/ai-grid-shared-catalog](https://github.com/ai-grid-cloud/ai-grid-shared-catalog). That URL is the only
-value another environment changes: it appears in the two AppProjects and the three ApplicationSets in
-`hub/catalog-*`, and in the console's `apps/console/application.yaml`.
+saves models and subscriptions as commits to a catalog repository. The deployment names it with the inputs
+`catalogRepoURL` and `catalogRevision` (a branch, since the console pushes to it). `hub/inputs.yaml` carries them into
+the two AppProjects and the three ApplicationSets in `hub/catalog-*`; `apps/console/application.yaml` hands them to the
+console's backend.
 
 The `catalog-*` files in `hub/` deliver it to AI Grid spokes by role (Placements in `apps/ai-grid-spokes`):
 

@@ -11,8 +11,9 @@ spec:
     repoURL: '@libraryRepoURL@'
     targetRevision: '@libraryRevision@'
     path: apps/acm-models/hub
-    # The library's own repository and revision for the ApplicationSets in
-    # this directory (its inputs.yaml), from the root's values.
+    # The library's own repository and revision, and the catalog repository
+    # and branch, for the ApplicationSets in this directory (its inputs.yaml),
+    # from the root's values.
     kustomize:
       patches:
         - target:
@@ -26,6 +27,8 @@ spec:
             data:
               libraryRepoURL: '@libraryRepoURL@'
               libraryRevision: '@libraryRevision@'
+              catalogRepoURL: '@catalogRepoURL@'
+              catalogRevision: '@catalogRevision@'
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops
