@@ -76,7 +76,8 @@ Not supported yet. The console reads `dashboard-*` PersesDashboards from project
 You can leave both out; the verified install did. Models, subscriptions and calls work without them. What stops
 working:
 
-- The console's **Monitoring** page has no dashboards to show.
+- The console's **Monitoring** page has no dashboards to show: it reports "Unable to load dashboards" because
+  `redhat-ods-monitoring` doesn't exist.
 - No site sends usage records, so nobody can see token usage per organization, user or model, in the console's
   dashboard or the Org UI.
 - ACM still collects default platform metrics, but not OpenShift AI's or the grid's.

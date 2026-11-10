@@ -79,6 +79,16 @@ upstream fix [opendatahub-io/kserve#2175](https://github.com/opendatahub-io/kser
 **Fix:** none needed; check twice or watch for a minute. Don't pin an older nightly to avoid it: that brings back the
 bug kserve#2171 fixed.
 
+## The Monitoring page can't load dashboards
+
+**Symptom:** the console's **Monitoring** page says it's unable to load dashboards because `redhat-ods-monitoring`
+doesn't exist.
+
+**Cause:** the dashboards come from the observability components, which you didn't select.
+
+**Fix:** none needed if you skipped observability on purpose; see [observability](components/observability.md) and
+[known gaps](appendix-c-gaps.md).
+
 ## A model's catalog Applications don't appear
 
 **Cause:** the catalog ApplicationSets' git generator didn't pick up the catalog's first commits.

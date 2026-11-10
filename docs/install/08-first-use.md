@@ -16,12 +16,22 @@ The page steps are given too, and are *(Unverified.)* in this release of the gui
 
 ## 1. Sign in to the console
 
-Open `https://CONSOLE_HOST` (from [step 2](04-hub-components.md#3-verify)) and sign in as a cluster admin. You should
-see the **Clusters** page with your sites. *(Unverified.)*
+1. Open `https://CONSOLE_HOST` (from [step 2](04-hub-components.md#3-verify)). OpenShift's sign-in page opens.
+2. Choose your identity provider, such as `htpasswd` for the break-glass admin, and sign in as a cluster admin.
+
+   You should see the **AI Grid** page, with your user shown as `USER (provider admin)`. The navigation lists
+   **AI Grid**, **Monitoring**, **Clusters**, **Organizations**, **Models** and **Subscriptions**.
+
+3. Click **Clusters**. You should see each site with AI Grid status **Provisioned**, its role and its location. The
+   hub (`local-cluster`) shows **Not added**, which is expected for a hub that isn't a site.
+
+The **Monitoring** page shows dashboards only if you selected observability; without it, it reports that
+`redhat-ods-monitoring` doesn't exist ([troubleshooting](10-troubleshooting.md#the-monitoring-page-cant-load-dashboards)).
 
 ## 2. Create an organization
 
-In the console, go to **Organizations**, click **Create**, and enter a name and an email domain. *(Unverified.)*
+In the console, go to **Organizations** and click **Create organization**. Enter a name and an email domain.
+*(Unverified: the page and its button were checked, not the create.)*
 
 Or through the API:
 
@@ -44,8 +54,8 @@ Keycloak. *(Unverified.)*
 Use a chat model: the MaaS gateway sends completions to the chat endpoint, so a model without a chat template, such
 as OPT-125m, answers `400`. The tested model is SmolLM2-135M-Instruct on CPU.
 
-In the console, go to **Models**, click **Deploy**, choose the model URI, the runtime image, resources and the site.
-*(Unverified.)*
+In the console, go to **Models** and click **Deploy model**. Choose the model URI, the runtime image, resources and
+the site. *(Unverified: the page and its button were checked, not the deploy.)*
 
 Or through the API:
 
@@ -75,8 +85,8 @@ You should see `HTTP 200`, and a new commit in your catalog repository under the
 A subscription gives an organization's group access to models, with a token rate limit. Give the group name as
 plain text, such as `ai-grid-users`; MaaS prefixes it with the organization ID.
 
-In the console, go to **Subscriptions**, click **Create**, choose the organization, the group and the model.
-*(Unverified.)*
+In the console, go to **Subscriptions** and click **Create subscription**. Choose the organization, the group and the
+model. *(Unverified: the page and its button were checked, not the create.)*
 
 Or through the API:
 
@@ -105,7 +115,8 @@ oc --context "$HUB_CONTEXT" get applications.argoproj.io -n openshift-gitops | g
 oc --context "$SITE_CONTEXT" get llminferenceservices,maassubscriptions,maasauthpolicies -A
 ```
 
-You should see the model `Ready` and the subscription and its auth policy on the site. If no catalog Applications
+You should see the model `Ready` and the subscription and its auth policy on the site. In the console, **Models**
+shows the model **Ready** and **Available**, and **Subscriptions** shows the subscription **Active**. If no catalog Applications
 appear after the catalog's first commits, refresh the ApplicationSets once
 ([model delivery](components/model-delivery.md)).
 
