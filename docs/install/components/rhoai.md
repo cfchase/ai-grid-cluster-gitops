@@ -131,7 +131,7 @@ MaaS gateway certificate errors and the cleartext port 80 listener are on the
 
 **Symptom:** the Org UI signs a tenant in, then can't load models ("Unable to load MaaS models") or API keys; its
 calls return 401.
-**Cause:** OpenShift AI 3.6 nightlies before FBC `d0ee30a`, including the library's pinned `19a9c77`, send the
+**Cause:** OpenShift AI 3.6 nightlies before FBC `d0ee30a` send the
 portal's token in the wrong header ([RHAI-21554](https://redhat.atlassian.net/browse/RHAI-21554)).
 **Workaround:** pin FBC `d0ee30a` or later; until then, create API keys through the MaaS API
 ([troubleshooting](../10-troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).

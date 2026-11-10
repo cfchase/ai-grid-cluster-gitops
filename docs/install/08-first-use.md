@@ -231,7 +231,7 @@ which generates the password into a file.
    create another key under another subscription.
 
    Tenants can also create keys in the Org UI, at `https://MAAS_HOST/maas-portal` under **API keys**. On OpenShift AI
-   builds before FBC `d0ee30a`, which include the library's pinned build, the Org UI can't load models or keys
+   builds before FBC `d0ee30a`, the Org UI can't load models or keys
    ([troubleshooting](10-troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).
 
 6. Revoke the key:
