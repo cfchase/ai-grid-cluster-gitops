@@ -16,7 +16,7 @@
 # (namespace keycloak, its operator, OAuth IdP rhbk), cert-manager, NFD, the GPU
 # operator, ACME ClusterIssuers, and every openshift-*/kube-* namespace not
 # listed below. Cluster-wide pull secret and mirror changes stay: the new hub's
-# prerequisites Policy manages them, and removing a mirror reboots every node.
+# prerequisites Policy manages them, and removing a mirror drains every node.
 set -Eeuo pipefail
 
 # Add your platform's own with WIPE_PROTECT_NAMESPACES and WIPE_PROTECT_PACKAGES

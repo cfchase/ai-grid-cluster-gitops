@@ -90,8 +90,11 @@ The registry pieces of the `rhoai-prerequisites` Policy:
   `registry.redhat.io/rhaii`, `rhaii-early-access` and `rhaii-fast` from `registry.stage.redhat.io`, all with
   `mirrorSourcePolicy: NeverContactSource`.
 
-Delivering the mirror reboots each cluster's nodes once: the Machine Config Operator rolls the change out node by
-node. Plan for it when a cluster joins ACM, the hub included. Pull secret updates roll out without a reboot.
+Neither delivery drains or reboots nodes. The Machine Config Operator writes the new pull secret and `registries.conf`
+to each node and reloads CRI-O: a pull secret change never needs a drain or reboot, and adding mirrors that are
+digest-only, as an ImageDigestMirrorSet's are, skips the drain ([OpenShift 4.22, Machine configuration, "About the Machine Config Operator"](https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html-single/machine_configuration/index#about-machine-config-operator_machine-config-overview); the same in 4.21). On the tested site the
+first delivery logged `Changes do not require drain, skipping` and `crio service reloaded` on every node, and no
+node restarted. Removing or changing a mirror later does drain the nodes, one at a time.
 
 The [README](../../../apps/rhoai-prerequisites/README.md) has the details, including the OpenTelemetry workaround.
 
@@ -109,7 +112,8 @@ oc -n SITE get policies | grep rhoai-prerequisites
 Replace `SITE` with the ManagedCluster name of a site.
 
 You should see Secret type `kubernetes.io/dockerconfigjson`, and each Policy `Compliant`. A cluster's
-`rhoai-prerequisites` Policy stays `NonCompliant` while its nodes roll out the new pull secret.
+`rhoai-prerequisites` Policy can stay `NonCompliant` for a few minutes while its MachineConfigPools apply the new
+pull secret and mirror. *(Unverified.)*
 
 On the site, check the namespaces, the mirror and the pull secret, without showing any credential:
 
@@ -164,13 +168,7 @@ the old one. Deleting the hub Secret doesn't remove credentials already on the c
 
 ## Known issues
 
-- **Symptom:** The bootstrap script reports `quay.io/rhoai pull secret file` `MISSING` from the prerequisites check,
-  then succeeds.
-  **Cause:** `scripts/check-prerequisites.sh` looks for `RHOAI_QUAY_PULL_SECRET_FILE`; the example script uses
-  `RHOAI_QUAY_AUTH_FILE`.
-  **Workaround:** Ignore that line during bootstrap, or export both variables with the same path.
-- **Symptom:** A site's nodes go `SchedulingDisabled` and reboot one by one soon after it joins ACM.
-  **Cause:** The image mirror's Machine Config rollout: the Machine Config Operator applies the ImageDigestMirrorSet by
-  draining and rebooting each node.
-  **Workaround:** None needed; wait for every MachineConfigPool to report `UPDATED` `True` before you label the site.
-  Removing the mirror later reboots the nodes again.
+- **Symptom:** A site's nodes go `SchedulingDisabled` one by one after you change or remove the image mirror.
+  **Cause:** Changing or removing `registries.conf` entries makes the Machine Config Operator drain each node; only
+  adding digest-only mirrors skips the drain.
+  **Workaround:** None needed; wait for every MachineConfigPool to report `UPDATED` `True`.
