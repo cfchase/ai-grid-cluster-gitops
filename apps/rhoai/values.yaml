@@ -5,8 +5,10 @@ components:
       gateway:
         name: maas-default-gateway
         namespace: openshift-ingress
-        annotations:
-          ai-grid/maas-gateway-hostname-prefix: maas
+        # Each ingress or combined site sets
+        # ai-grid/maas-gateway-hostname-prefix in its deployment file,
+        # values/clusters/<cluster>/rhoai.yaml; gateway-hostname fails without it.
+        annotations: {}
 
 operator:
   type: rhoai

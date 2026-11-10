@@ -35,7 +35,5 @@ external:
     issuer:
       create: true
       name: grid-ca
-    ca:
-      # Preserve the existing CA while external issuance takes over identities.
-      mode: Existing
-      secretName: grid-ca-key
+    # ca.mode (Generate for a new grid, Existing to keep its CA) and, for
+    # Existing, ca.secretName are the deployment's: values/grid-bootstrap.yaml.

@@ -7,8 +7,26 @@ HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+# The prefix is per site: the deployment's values/clusters/<cluster>/rhoai.yaml.
+cat > "$TMP_DIR/site.yaml" <<'EOF'
+components:
+  aigateway:
+    modelsAsAService:
+      gateway:
+        annotations:
+          ai-grid/maas-gateway-hostname-prefix: maas
+EOF
+
+# Without a site file, an ingress or combined site fails, naming the input.
+if helm template rhoai-gateway-hostname "$HERE/../gateway-hostname" -f "$HERE/../values.yaml" \
+  --set clusterNamespace=target-cluster > /dev/null 2> "$TMP_DIR/error"; then
+  echo "gateway-hostname renders with no hostname prefix" >&2; exit 1
+fi
+grep -q 'maas-gateway-hostname-prefix is required' "$TMP_DIR/error" ||
+  { echo "gateway-hostname fails without naming the prefix:" >&2; cat "$TMP_DIR/error" >&2; exit 1; }
+
 helm template rhoai-gateway-hostname "$HERE/../gateway-hostname" \
-  -f "$HERE/../values.yaml" \
+  -f "$HERE/../values.yaml" -f "$TMP_DIR/site.yaml" \
   --set clusterNamespace=target-cluster > "$TMP_DIR/rendered.yaml"
 
 python3 - "$TMP_DIR/rendered.yaml" "$HERE/../hub/01-applicationset.yaml" <<'PY'
@@ -31,7 +49,9 @@ assert hostnames == [
 appset = yaml.safe_load(open(sys.argv[2]))
 sources = appset["spec"]["template"]["spec"]["sources"]
 source = next(item for item in sources if item.get("path") == "apps/rhoai/gateway-hostname")
-assert source["helm"]["valueFiles"] == ["$values/apps/rhoai/values.yaml"]
+assert source["helm"]["valueFiles"] == ["$values/apps/rhoai/values.yaml",
+                                       "$deployment/values/clusters/{{ .name }}/rhoai.yaml"]
+assert source["helm"]["ignoreMissingValueFiles"] is True
 parameters = {parameter["name"]: parameter["value"]
               for parameter in source["helm"]["parameters"]}
 assert parameters == {"clusterNamespace": "{{ .name }}",
@@ -50,4 +70,4 @@ inference_objects=$(helm template rhoai-gateway-hostname "$HERE/../gateway-hostn
   grep -c '^kind:' || true)
 [ "$inference_objects" = 0 ] || { echo "gateway-hostname renders $inference_objects objects for role inference" >&2; exit 1; }
 
-echo "gateway-hostname tests: 2 ok, 0 failed"
+echo "gateway-hostname tests: 3 ok, 0 failed"
