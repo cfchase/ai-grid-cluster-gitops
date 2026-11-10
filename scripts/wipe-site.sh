@@ -27,7 +27,7 @@ PROTECTED_PACKAGES="rhbk-operator openshift-cert-manager-operator nfd gpu-operat
 # Operators an AI Grid site's OpenShift AI install brings (package names).
 OPERATOR_PACKAGES="rhods-operator rhcl-operator authorino-operator dns-operator limitador-operator cluster-observability-operator leader-worker-set loki-operator opentelemetry-product tempo-product"
 # API groups whose objects belong to the install (deleted in every namespace).
-MAAS_GROUPS="maas.opendatahub.io aigateway.opendatahub.io"
+MAAS_GROUPS="maas.opendatahub.io aigateway.opendatahub.io inference.opendatahub.io"
 GRID_GROUPS="grid.praxis.fast"
 # Gateways in openshift-ingress that OpenShift AI and MaaS create.
 GATEWAYS="data-science-gateway openshift-ai-inference maas-default-gateway"
@@ -91,7 +91,11 @@ done
 
 echo "== 2. MaaS objects"
 for g in $MAAS_GROUPS; do for r in $(resources_in "$g"); do del_all_of "$r"; done; done
-for g in $MAAS_GROUPS; do for r in $(resources_in "$g"); do wait_gone "$r" 600 k get "$r" -A --no-headers; done; done
+# Wait for the finalizers to run, not for the kinds to empty: while the DataScienceCluster
+# exists, the operator recreates its MaaS Config, MaaSTenantConfig and AITenant (site-b, 2026-11-10).
+for g in $MAAS_GROUPS; do for r in $(resources_in "$g"); do
+  wait_gone "$r being deleted" 600 k get "$r" -A -o jsonpath='{range .items[?(@.metadata.deletionTimestamp)]}{.metadata.name}{"\n"}{end}'
+done; done
 
 echo "== 3. DataScienceCluster, then its components"
 del_all_of datascienceclusters.datasciencecluster.opendatahub.io
@@ -99,6 +103,19 @@ wait_gone "DataScienceCluster" 900 k get datascienceclusters.datasciencecluster.
 for r in $(resources_in components.platform.opendatahub.io); do wait_gone "$r" 600 k get "$r" -A --no-headers; done
 del_all_of dscinitializations.dscinitialization.opendatahub.io
 wait_gone "DSCInitialization" 600 k get dscinitializations.dscinitialization.opendatahub.io -A --no-headers
+
+# What the operator recreated after step 2 now has no controller to run its finalizers
+# (maas-controller and ai-gateway-controller went with the DataScienceCluster), and would
+# hold its namespace in Terminating. Delete it and drop its finalizers.
+echo "== 3b. MaaS objects recreated before the DataScienceCluster went"
+for g in $MAAS_GROUPS; do for r in $(resources_in "$g"); do
+  list_kind "$r" | while read -r ns name; do
+    [ -n "$name" ] || continue
+    if [ "$ns" = "<none>" ]; then set -- "$r" "$name"; else contains "$PROTECTED_NAMESPACES" "$ns" && continue; set -- "$r" "$name" -n "$ns"; fi
+    if $dry_run; then echo "would delete without finalizers: $*"
+    else k patch "$@" --type merge -p '{"metadata":{"finalizers":null}}' >/dev/null || true; del "$@"; fi
+  done
+done; done
 
 echo "== 4. grid records"
 for g in $GRID_GROUPS; do for r in $(resources_in "$g"); do del_all_of "$r"; done; done
