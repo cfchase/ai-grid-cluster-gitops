@@ -44,6 +44,10 @@ spec:
     metadata:
       name: 'rhoai-{{ .name | trunc 34 }}-{{ sha256sum .name | trunc 8 }}'
       namespace: openshift-gitops
+      labels:
+        # The library commit this site's OpenShift AI comes from, so the hub
+        # shows which revision each site runs (kustomization.yaml fills it in).
+        ai-grid/library-revision: REQUIRED-libraryRevision
     spec:
       project: default
       sources:
