@@ -1,0 +1,274 @@
+#!/usr/bin/env bash
+# Uninstall AI Grid: each site, then the hub. The end state is each cluster as
+# it was before install step 1 (docs/install/09-operate.md, "Uninstall").
+#
+#   uninstall.sh --step site --hub-kubeconfig PATH --expect-hub-api URL \
+#                --site NAME --site-kubeconfig PATH --expect-site-api URL \
+#                --admin-password-file PATH [--admin-user admin] [--dry-run]
+#   uninstall.sh --step hub  --hub-kubeconfig PATH --expect-hub-api URL \
+#                --admin-password-file PATH [--admin-user admin] [--dry-run]
+#
+# --dry-run prints every step and every object it would delete, in order, and
+# deletes nothing. The object list comes from Argo CD's own inventory
+# (uninstall-plan.py); operators then remove what they created.
+#
+# Safety:
+# - Refuses a cluster whose API URL isn't --expect-*-api.
+# - Refuses unless the htpasswd admin signs in with the password file and holds
+#   cluster-admin through a binding the uninstall doesn't delete.
+# - Never touches the protected namespaces and operator packages (the
+#   platform's Keycloak, cert-manager, NFD, GPU operator, openshift-config,
+#   openshift-authentication), ClusterIssuers, OAuth, the cluster pull secret
+#   or image mirror, or CRDs. Extend the protected lists with
+#   WIPE_PROTECT_NAMESPACES and WIPE_PROTECT_PACKAGES (space-separated).
+# - The hub step refuses while any site is still managed.
+set -Eeuo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+say() { printf '\n== %s\n' "$*"; }
+
+step="" hub_kc="" hub_api="" site="" site_kc="" site_api="" pw_file="" user=admin dry_run=false
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --step) step=$2; shift 2 ;;
+    --hub-kubeconfig) hub_kc=$2; shift 2 ;;
+    --expect-hub-api) hub_api=$2; shift 2 ;;
+    --site) site=$2; shift 2 ;;
+    --site-kubeconfig) site_kc=$2; shift 2 ;;
+    --expect-site-api) site_api=$2; shift 2 ;;
+    --admin-password-file) pw_file=$2; shift 2 ;;
+    --admin-user) user=$2; shift 2 ;;
+    --dry-run) dry_run=true; shift ;;
+    -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) die "unknown argument: $1 (see --help)" ;;
+  esac
+done
+case "$step" in site|hub) ;; *) die "--step must be site or hub" ;; esac
+[ -n "$hub_kc" ] && [ -n "$hub_api" ] && [ -s "$pw_file" ] || die "--hub-kubeconfig, --expect-hub-api and --admin-password-file are required"
+if [ "$step" = site ]; then
+  [ -n "$site" ] && [ -n "$site_kc" ] && [ -n "$site_api" ] || die "--step site needs --site, --site-kubeconfig and --expect-site-api"
+  [ "$site" != local-cluster ] || die "a hub that is also a site isn't supported yet: unlabel local-cluster, then run --step hub"
+fi
+for c in oc python3 curl; do command -v "$c" >/dev/null || die "required command not found: $c"; done
+
+protect_ns="${WIPE_PROTECT_NAMESPACES:-}" protect_pkgs="${WIPE_PROTECT_PACKAGES:-}"
+H() { oc --kubeconfig "$hub_kc" "$@"; }
+S() { oc --kubeconfig "$site_kc" "$@"; }
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+
+# --- checks ---------------------------------------------------------------
+same_api() { [ "$(oc --kubeconfig "$1" whoami --show-server 2>/dev/null | sed 's#/*$##')" = "$(printf '%s' "$2" | sed 's#/*$##')" ]; }
+same_api "$hub_kc" "$hub_api" || die "--hub-kubeconfig doesn't point at $hub_api"
+[ "$step" = hub ] || same_api "$site_kc" "$site_api" || die "--site-kubeconfig doesn't point at $site_api"
+
+check_admin() { # KUBECONFIG LABEL: the htpasswd admin signs in and keeps cluster-admin
+  local kc=$1 label=$2 oauth host
+  oc --kubeconfig "$kc" get oauth cluster -o jsonpath='{range .spec.identityProviders[*]}{.type}{"\n"}{end}' |
+    grep -qx HTPasswd || die "$label: no HTPasswd identity provider (run add-htpasswd-admin.sh first)"
+  oauth="$(oc --kubeconfig "$kc" get route oauth-openshift -n openshift-authentication -o jsonpath='{.spec.host}')"
+  (umask 077; printf 'machine %s login %s password %s\n' "$oauth" "$user" "$(cat "$pw_file")" > "$tmp/netrc")
+  host="$(curl -sS -o /dev/null -w '%{redirect_url}' --netrc-file "$tmp/netrc" -H 'X-CSRF-Token: 1' \
+    "https://$oauth/oauth/authorize?client_id=openshift-challenging-client&response_type=token")"
+  rm -f "$tmp/netrc"
+  case "$host" in *access_token=*) ;; *) die "$label: $user can't sign in with the password file" ;; esac
+  # A kubeconfig with the admin's token, so the token never reaches a command line.
+  (umask 077; printf '%s' "$host" | sed -E 's/.*access_token=([^&]*).*/\1/' > "$tmp/token"); unset host
+  (umask 077; oc --kubeconfig "$kc" config view --minify --raw -o json | python3 -c '
+import json, sys
+c = json.load(sys.stdin); c["users"][0]["user"] = {"token": open(sys.argv[1]).read().strip()}
+print(json.dumps(c))' "$tmp/token" > "$tmp/admin.kubeconfig")
+  rm -f "$tmp/token"
+  [ "$(oc --kubeconfig "$tmp/admin.kubeconfig" auth can-i '*' '*' --all-namespaces 2>/dev/null)" = yes ] ||
+    { rm -f "$tmp/admin.kubeconfig"; die "$label: $user isn't cluster-admin"; }
+  rm -f "$tmp/admin.kubeconfig"
+  echo "$label: $user signs in with the htpasswd provider and is cluster-admin."
+}
+admin_binding_kept() { # KUBECONFIG LABEL PLANFILE: a cluster-admin binding for the user survives the plan
+  local kept
+  kept="$(oc --kubeconfig "$1" get clusterrolebindings -o json | python3 -c '
+import json, sys
+user, planned = sys.argv[1], set(open(sys.argv[2]).read().split())
+for b in json.load(sys.stdin)["items"]:
+    if b["roleRef"]["name"] != "cluster-admin" or b["metadata"]["name"] in planned:
+        continue
+    if any(s.get("kind") == "User" and s.get("name") == user for s in b.get("subjects") or []):
+        print(b["metadata"]["name"])' "$user" <(awk -F'\t' '$2 ~ /^ClusterRoleBinding/ {print $4}' "$3"))"
+  [ -n "$kept" ] || die "$2: $user's only cluster-admin binding is one the uninstall deletes; grant it another first (add-htpasswd-admin.sh)"
+}
+
+say "checks"
+check_admin "$hub_kc" hub
+[ "$step" = hub ] || check_admin "$site_kc" "$site"
+
+# --- deleting -------------------------------------------------------------
+del() { # KUBECONFIG ARGS...
+  local kc=$1; shift
+  if $dry_run; then echo "would delete: $*"; else oc --kubeconfig "$kc" delete "$@" --ignore-not-found --wait=false; fi
+}
+wait_gone() { # KUBECONFIG SECONDS DESCRIPTION GET-ARGS...
+  local kc=$1 secs=$2 what=$3; shift 3
+  $dry_run && return 0
+  for _ in $(seq 1 $((secs / 10))); do
+    [ -z "$(oc --kubeconfig "$kc" get "$@" --ignore-not-found -o name 2>/dev/null)" ] && return 0; sleep 10
+  done
+  echo "warning: $what still present after ${secs}s" >&2
+}
+run_plan() { # KUBECONFIG PLANFILE GROUP...: delete one group at a time, waiting for each
+  local kc=$1 plan=$2; shift 2
+  local group kind ns name pkg csv
+  for group in "$@"; do
+    grep -q "^$group	" "$plan" || continue
+    say "plan: $group"
+    while IFS=$'\t' read -r g kind ns name; do
+      [ "$g" = "$group" ] || continue
+      [ "$ns" != - ] || ns=""
+      if [ "$kind" = Subscription.v1alpha1.operators.coreos.com ]; then
+        pkg="$(oc --kubeconfig "$kc" get "$kind" "$name" -n "$ns" -o jsonpath='{.spec.name}' 2>/dev/null || true)"
+        case " $protect_pkgs rhbk-operator openshift-cert-manager-operator nfd gpu-operator-certified " in
+          *" $pkg "*) echo "kept (protected package): $pkg"; continue ;;
+        esac
+        csv="$(oc --kubeconfig "$kc" get "$kind" "$name" -n "$ns" -o jsonpath='{.status.installedCSV}' 2>/dev/null || true)"
+        del "$kc" "$kind" "$name" -n "$ns"
+        [ -z "$csv" ] || del "$kc" clusterserviceversions.operators.coreos.com "$csv" -n "$ns"
+      elif [ -n "$ns" ]; then del "$kc" "$kind" "$name" -n "$ns"
+      else del "$kc" "$kind" "$name"; fi
+    done < "$plan"
+    while IFS=$'\t' read -r g kind ns name; do
+      [ "$g" = "$group" ] || continue
+      [ "$ns" != - ] || ns=""
+      if [ -n "$ns" ]; then wait_gone "$kc" 900 "$kind $ns/$name" "$kind" "$name" -n "$ns"
+      else wait_gone "$kc" 900 "$kind $name" "$kind" "$name"; fi
+    done < "$plan"
+  done
+}
+make_plan() { # MODE OUTFILE
+  local args=(--mode "$1" --protect-namespaces "$protect_ns" --protect-packages "$protect_pkgs")
+  [ "$1" = site ] && args+=(--site "$site")
+  H get applications.argoproj.io -n openshift-gitops -o json | python3 "$here/uninstall-plan.py" "${args[@]}" > "$2"
+  echo "$(wc -l < "$2" | tr -d ' ') objects planned (Argo CD inventory):"
+  sed 's/^/  /' "$2"
+}
+
+# --- site -----------------------------------------------------------------
+if [ "$step" = site ]; then
+  managed=false
+  if H get managedcluster "$site" >/dev/null 2>&1; then
+    managed=true
+    name="$(S get klusterlet klusterlet -o jsonpath='{.spec.clusterName}' 2>/dev/null || true)"
+    [ -z "$name" ] || [ "$name" = "$site" ] || die "the site's klusterlet says it's $name, not $site"
+  fi
+
+  say "inventory of $site"
+  make_plan site "$tmp/plan"
+  admin_binding_kept "$site_kc" "$site" "$tmp/plan"
+
+  if $managed; then
+    say "hub: stop managing $site"
+    if $dry_run; then echo "would remove labels ai-grid/enabled and ai-grid/role from managedcluster $site"
+    else H label managedcluster "$site" ai-grid/enabled- ai-grid/role- >/dev/null; fi
+    $dry_run || for _ in $(seq 1 30); do
+      left="$(H get applications.argoproj.io -n openshift-gitops -o json | python3 -c '
+import json, sys
+site = sys.argv[1]
+for a in json.load(sys.stdin)["items"]:
+    d = a["spec"].get("destination", {})
+    if (d.get("name") == site or d.get("server", "").rstrip("/").endswith("/" + site)) and not a["metadata"]["name"].startswith("acm-submariner"):
+        print(a["metadata"]["name"])' "$site")"
+      [ -z "$left" ] && break; sleep 10
+    done
+    say "hub: detach $site from ACM"
+    del "$hub_kc" managedcluster "$site"
+    wait_gone "$hub_kc" 900 "ManagedCluster $site" managedcluster "$site"
+    # Argo CD cluster Secrets and the grid identity that outlive the detach (F5).
+    for s in $(H get secrets -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster -o json | python3 -c '
+import base64, json, sys
+for x in json.load(sys.stdin)["items"]:
+    if base64.b64decode(x.get("data", {}).get("name", "")).decode() == sys.argv[1]:
+        print(x["metadata"]["name"])' "$site"); do del "$hub_kc" secret "$s" -n openshift-gitops; done
+    del "$hub_kc" certificates.cert-manager.io "grid-site-$site" -n redhat-ai-grid
+    del "$hub_kc" secret "grid-site-$site" -n redhat-ai-grid
+  else
+    echo "$site isn't a ManagedCluster on the hub; going straight to the site."
+  fi
+
+  say "site: OpenShift AI, MaaS, the grid and their operators (wipe-site.sh)"
+  wipe=(bash "$here/wipe-site.sh" --kubeconfig "$site_kc")
+  if $dry_run; then wipe+=(--dry-run); $managed && wipe+=(--assume-detached); fi
+  "${wipe[@]}"
+
+  say "site: everything else the install applied"
+  run_plan "$site_kc" "$tmp/plan" policies custom-resources objects cluster-scoped operators namespaces
+  for ns in open-cluster-management-agent open-cluster-management-agent-addon submariner-operator; do
+    if S get ns "$ns" >/dev/null 2>&1; then del "$site_kc" ns "$ns"; fi
+  done
+
+  say "check: $site"
+  $dry_run || check_admin "$site_kc" "$site"
+  echo "== done$($dry_run && echo ' (dry run: nothing deleted)')"
+  exit 0
+fi
+
+# --- hub ------------------------------------------------------------------
+sites="$(H get managedclusters -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | grep -vx local-cluster || true)"
+if [ -n "$sites" ]; then
+  $dry_run || die "sites are still managed (uninstall each with --step site first): $(echo $sites)"
+  echo "warning: sites are still managed ($(echo $sites)); the real run refuses until each is uninstalled"
+fi
+[ "$(H get managedcluster local-cluster -o jsonpath='{.metadata.labels.ai-grid/enabled}' 2>/dev/null)" != true ] ||
+  die "local-cluster is labelled ai-grid/enabled: a hub that is also a site isn't supported yet"
+
+say "inventory of the hub"
+make_plan hub "$tmp/plan"
+admin_binding_kept "$hub_kc" hub "$tmp/plan"
+
+say "stop Argo CD (ApplicationSets orphan their Applications; Applications lose their finalizers)"
+for a in $(H get applicationsets.argoproj.io -n openshift-gitops -o name 2>/dev/null); do del "$hub_kc" "$a" -n openshift-gitops --cascade=orphan; done
+$dry_run || wait_gone "$hub_kc" 120 "ApplicationSets" applicationsets.argoproj.io -n openshift-gitops
+for a in $(H get applications.argoproj.io -n openshift-gitops -o name 2>/dev/null); do
+  if $dry_run; then echo "would remove finalizers and delete: $a"
+  else
+    H patch "$a" -n openshift-gitops --type merge -p '{"metadata":{"finalizers":null}}' >/dev/null
+    H delete "$a" -n openshift-gitops --ignore-not-found --wait=false
+  fi
+done
+
+run_plan "$hub_kc" "$tmp/plan" policies custom-resources acm
+if H get multiclusterengines.multicluster.openshift.io >/dev/null 2>&1; then
+  say "multicluster engine"
+  for m in $(H get multiclusterengines.multicluster.openshift.io -o name); do del "$hub_kc" "$m"; done
+  wait_gone "$hub_kc" 1200 "MultiClusterEngine" multiclusterengines.multicluster.openshift.io
+  for s in $(H get subscriptions.operators.coreos.com -n multicluster-engine -o name 2>/dev/null); do
+    csv="$(H get "$s" -n multicluster-engine -o jsonpath='{.status.installedCSV}')"
+    del "$hub_kc" "$s" -n multicluster-engine; [ -z "$csv" ] || del "$hub_kc" csv "$csv" -n multicluster-engine
+  done
+fi
+run_plan "$hub_kc" "$tmp/plan" objects cluster-scoped operators namespaces
+
+say "ACM leftovers (Red Hat's ACM 2.17 cleanup list)"
+for r in "apiservice v1.admission.cluster.open-cluster-management.io" "apiservice v1.admission.work.open-cluster-management.io" \
+         "mutatingwebhookconfiguration ocm-mutating-webhook" "mutatingwebhookconfiguration managedclustermutators.admission.cluster.open-cluster-management.io" \
+         "mutatingwebhookconfiguration multicluster-observability-operator" \
+         "validatingwebhookconfiguration channels.apps.open.cluster.management.webhook.validator" "validatingwebhookconfiguration application-webhook-validator" \
+         "validatingwebhookconfiguration multiclusterhub-operator-validating-webhook" "validatingwebhookconfiguration ocm-validating-webhook" \
+         "validatingwebhookconfiguration multicluster-observability-operator" "validatingwebhookconfiguration multiclusterengines.multicluster.openshift.io"; do
+  # shellcheck disable=SC2086
+  if H get $r >/dev/null 2>&1; then del "$hub_kc" $r; fi
+done
+for ns in multicluster-engine open-cluster-management-hub open-cluster-management-observability; do
+  if H get ns "$ns" >/dev/null 2>&1; then del "$hub_kc" ns "$ns"; fi
+done
+
+say "OpenShift GitOps"
+for a in $(H get argocds.argoproj.io -A -o name 2>/dev/null); do del "$hub_kc" "$a" -n openshift-gitops; done
+wait_gone "$hub_kc" 600 "ArgoCD" argocds.argoproj.io -A
+csv="$(H get subscriptions.operators.coreos.com openshift-gitops-operator -n openshift-gitops-operator -o jsonpath='{.status.installedCSV}' 2>/dev/null || true)"
+del "$hub_kc" subscriptions.operators.coreos.com openshift-gitops-operator -n openshift-gitops-operator
+[ -z "$csv" ] || del "$hub_kc" csv "$csv" -n openshift-gitops-operator
+for ns in openshift-gitops openshift-gitops-operator; do
+  if H get ns "$ns" >/dev/null 2>&1; then del "$hub_kc" ns "$ns"; fi
+done
+wait_gone "$hub_kc" 900 "GitOps namespaces" ns openshift-gitops openshift-gitops-operator
+
+say "check: hub"
+$dry_run || check_admin "$hub_kc" hub
+echo "== done$($dry_run && echo ' (dry run: nothing deleted)')"

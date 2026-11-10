@@ -35,19 +35,22 @@ GATEWAYS="data-science-gateway openshift-ai-inference maas-default-gateway"
 NAMESPACES="ai-grid-internal-models kuadrant-system limitador-redis models-as-a-service odh-observability-webhook-probe redhat-ai-grid redhat-ods-applications redhat-ods-monitoring redhat-ods-operator openshift-cluster-observability-operator openshift-lws-operator openshift-opentelemetry-operator openshift-tempo-operator openshift-operators-redhat"
 WEBHOOK_PATTERN='kserve|opendatahub|odh-|llminferenceservice'
 
-usage() { echo "Usage: wipe-site.sh --kubeconfig PATH [--dry-run]"; }
+usage() { echo "Usage: wipe-site.sh --kubeconfig PATH [--dry-run [--assume-detached]]"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
-kubeconfig="" dry_run=false
+kubeconfig="" dry_run=false assume_detached=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --kubeconfig) kubeconfig="$2"; shift 2 ;;
     --dry-run) dry_run=true; shift ;;
+    # For uninstall.sh's dry run, which plans the detach before the wipe.
+    --assume-detached) assume_detached=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; die "unknown argument: $1" ;;
   esac
 done
 [ -n "$kubeconfig" ] || { usage >&2; die "--kubeconfig is required"; }
+$assume_detached && ! $dry_run && die "--assume-detached is only for --dry-run"
 k() { oc --kubeconfig "$kubeconfig" "$@"; }
 
 contains() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }
@@ -58,7 +61,7 @@ for p in $OPERATOR_PACKAGES; do contains "$PROTECTED_PACKAGES" "$p" && die "pack
 k get oauth cluster -o jsonpath='{range .spec.identityProviders[*]}{.type}{"\n"}{end}' | grep -qx HTPasswd ||
   die "no HTPasswd identity provider: run add-htpasswd-admin.sh first"
 k get managedcluster >/dev/null 2>&1 && die "this cluster is an ACM hub; wipe-site.sh is for sites"
-k get ns open-cluster-management-agent >/dev/null 2>&1 && die "the cluster is still managed by a hub: detach it first"
+$assume_detached || { k get ns open-cluster-management-agent >/dev/null 2>&1 && die "the cluster is still managed by a hub: detach it first"; }
 
 del() { # del ARGS... : delete, or print what would be deleted
   if $dry_run; then echo "would delete: $*"; else k delete "$@" --ignore-not-found --wait=false; fi
