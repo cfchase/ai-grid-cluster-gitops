@@ -75,12 +75,11 @@ w=$(world no-cm); : > "$w/crds"
 t "hub without cert-manager" 1 "^MISSING +cert-manager CRDs" "$w" --step hub
 IDP=(--idp-secret tenant-idp/tenant-idp-client:client-secret --idp-ca openshift-config-managed/default-ingress-cert:ca-bundle.crt)
 KEYS=$'secret tenant-idp/tenant-idp-client:client-secret\nconfigmap openshift-config-managed/default-ingress-cert:ca-bundle.crt'
-w=$(world own-idp); printf '%s\n%s\n' "$CM_CRDS" "$RHBK_CRDS" > "$w/crds"; printf '%s\n' "$KEYS" > "$w/keys"
-t "own IdP with RHBK CRDs" 0 "^OK +RHBK CRDs" "$w" --step spoke --expect-idp own "${IDP[@]}"
+# Any OIDC provider meets the contract: no Keycloak or RHBK CRDs required.
+w=$(world own-idp); printf '%s\n' "$CM_CRDS" > "$w/crds"; printf '%s\n' "$KEYS" > "$w/keys"
+t "own IdP needs no Keycloak CRDs" 0 "^OK +IdP CA" "$w" --step spoke --expect-idp own "${IDP[@]}"
 t "own IdP's client secret has its key" 0 "^OK +IdP client secret" "$w" --step spoke --expect-idp own "${IDP[@]}"
 t "own IdP's CA has its key" 0 "^OK +IdP CA" "$w" --step spoke --expect-idp own "${IDP[@]}"
-w=$(world own-idp-missing); printf '%s\n' "$KEYS" > "$w/keys"
-t "own IdP without RHBK CRDs" 1 "^MISSING +RHBK CRDs" "$w" --step spoke --expect-idp own "${IDP[@]}"
 w=$(world own-idp-nokey); printf '%s\n%s\n' "$CM_CRDS" "$RHBK_CRDS" > "$w/crds"
 echo "configmap openshift-config-managed/default-ingress-cert:ca-bundle.crt" > "$w/keys"
 t "own IdP's Secret without its key" 1 "^MISSING +IdP client secret +tenant-idp/tenant-idp-client:client-secret" "$w" --step spoke --expect-idp own "${IDP[@]}"
