@@ -46,7 +46,7 @@ The root takes the library's `bootstrap/hub` at one commit. Every component then
    ```
 
    Replace `LIBRARY_REPO_URL` and `LIBRARY_BRANCH` with the library's repository and branch. Until the library lands
-   upstream, they are `https://github.com/cfchase/ai-grid-cluster-gitops` and `proto/library`.
+   upstream, they are `https://github.com/cfchase/ai-grid-cluster-gitops` and `proto/library-v2`.
 
 2. In `deployment/root/kustomization.yaml`, set the full 40-character SHA and the library URL in all three places:
    the remote base (`//bootstrap/hub?ref=SHA`), the generator `revision`, and `values.libraryRevision`; and
