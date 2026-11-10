@@ -24,8 +24,10 @@ managedClusters:
   clusterSet: global
   clusterLabel: ai-grid/enabled
   clusterLabelValue: 'true'
-  # The rhoai hub manifests own the shared binding.
-  createClusterSetBinding: false
+  # This release owns the global binding in redhat-ai-grid, which the grid's
+  # invite Placements select through: the root ApplicationSet removes the rhoai
+  # app's copy (bootstrap/hub/applicationset.yaml).
+  createClusterSetBinding: true
   hubClusterName: local-cluster
 external:
   delivery:

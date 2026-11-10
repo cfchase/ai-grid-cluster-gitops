@@ -4,6 +4,7 @@
 # the cluster and never reads a Secret's data.
 #
 # Usage: scripts/check-prerequisites.sh --step hub|spoke --context CTX [--expect-idp library|own]
+#        [--idp-secret NS/NAME:KEY --idp-ca NS/NAME:KEY]
 #
 #   --step hub     the hub, before and after its infrastructure step: OpenShift
 #                  version, a default StorageClass, cert-manager's CRDs, the
@@ -12,23 +13,28 @@
 #   --step spoke   a spoke before it joins ACM: OpenShift version and a default
 #                  StorageClass (the hub's policies deliver its pull secret)
 #   --expect-idp   the tenant IdP on this cluster: own (the deployment's own,
-#                  on the Red Hat build of Keycloak) checks the RHBK CRDs;
-#                  library (apps/keycloak, a plain Deployment) adds no check,
-#                  since what it needs are components (apps/maas-db,
-#                  apps/external-secrets)
+#                  on the Red Hat build of Keycloak) checks the RHBK CRDs and
+#                  the tenant Policy's two IdP inputs on this cluster: the
+#                  idpClientSecret* Secret (--idp-secret) and the idpCA*
+#                  ConfigMap (--idp-ca), each present with its key; both flags
+#                  are required with own. library (apps/keycloak, a plain
+#                  Deployment) adds no check, since what it needs are
+#                  components (apps/maas-db, apps/external-secrets)
 #
 # Prints OK or MISSING per check and exits 1 if anything is MISSING, 2 on bad
-# usage.
+# usage. A key is checked for presence only; its value is never printed.
 set -Eeuo pipefail
 
-usage() { sed -n '5,21p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '5,25p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
-step="" context="" idp=""
+step="" context="" idp="" idp_secret="" idp_ca=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --step) step=${2:-}; shift 2 ;;
     --context) context=${2:-}; shift 2 ;;
     --expect-idp) idp=${2:-}; shift 2 ;;
+    --idp-secret) idp_secret=${2:-}; shift 2 ;;
+    --idp-ca) idp_ca=${2:-}; shift 2 ;;
     -h|--help) usage ;;
     *) echo "unknown argument: $1" >&2; usage ;;
   esac
@@ -36,6 +42,12 @@ done
 case "$step" in hub|spoke) ;; *) echo "--step must be hub or spoke" >&2; usage ;; esac
 [ -n "$context" ] || { echo "--context is required" >&2; usage; }
 case "$idp" in ""|library|own) ;; *) echo "--expect-idp must be library or own" >&2; usage ;; esac
+ref_ok() { [[ $1 =~ ^[a-z0-9.-]+/[a-z0-9.-]+:[A-Za-z0-9._-]+$ ]]; }
+if [ "$idp" = own ]; then
+  if ! ref_ok "$idp_secret" || ! ref_ok "$idp_ca"; then
+    echo "--expect-idp own needs --idp-secret and --idp-ca as NS/NAME:KEY" >&2; usage
+  fi
+fi
 
 MIN_MINOR=21
 missing=0
@@ -90,6 +102,16 @@ if [ "$idp" = own ]; then
   else
     report MISSING "RHBK CRDs" "install the Red Hat build of Keycloak operator"
   fi
+  # The tenant Policy's hub templates read these by namespace, name and key.
+  # The go-template prints "present" or nothing, never the value.
+  has_key() { # kind NS/NAME:KEY
+    local ns=${2%%/*} rest=${2#*/}; local name=${rest%%:*} key=${rest#*:}
+    [ "$(oc_ get "$1" "$name" -n "$ns" -o go-template="{{if index .data \"$key\"}}present{{end}}" 2>/dev/null || true)" = present ]
+  }
+  if has_key secret "$idp_secret"; then report OK "IdP client secret" "$idp_secret"
+  else report MISSING "IdP client secret" "$idp_secret (Secret with that key; the idpClientSecret* inputs)"; fi
+  if has_key configmap "$idp_ca"; then report OK "IdP CA" "$idp_ca"
+  else report MISSING "IdP CA" "$idp_ca (ConfigMap with that key; the idpCA* inputs)"; fi
 fi
 
 exit "$missing"

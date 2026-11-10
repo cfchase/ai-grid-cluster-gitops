@@ -64,7 +64,7 @@ managedClusters:
   clusterSet: global
   clusterLabel: ai-grid/enabled
   clusterLabelValue: 'true'
-  createClusterSetBinding: false
+  createClusterSetBinding: true
   hubClusterName: local-cluster
 external:
   delivery:
@@ -74,14 +74,18 @@ external:
     issuer:
       create: true
       name: grid-ca
-    ca:
-      mode: Existing
-      secretName: grid-ca-key
 ```
 
-The lab keeps its CA with mode Existing. A new grid uses mode Generate.
+grid-bootstrap owns the binding of ClusterSet global into redhat-ai-grid (`createClusterSetBinding: true`); the root ApplicationSet removes the rhoai app's copy. The CA mode is the deployment's, in its `values/grid-bootstrap.yaml`, which the Application reads after these values and requires:
 
-Nothing else to run. The root ApplicationSet picks up [apps/grid-bootstrap/application.yaml](../../../apps/grid-bootstrap/application.yaml), which installs the chart on the hub with these values. Change them by committing to this file.
+```yaml
+external:
+  certManager:
+    ca:
+      mode: Generate        # a new grid; the lab keeps its CA with mode Existing and secretName grid-ca-key
+```
+
+Nothing else to run. The root ApplicationSet picks up [apps/grid-bootstrap/application.yaml](../../../apps/grid-bootstrap/application.yaml), which installs the chart on the hub with both files.
 
 Onboard a cluster by labelling its ManagedCluster `ai-grid/enabled=true` and `ai-grid/role` (`ingress`, `inference` or `combined`). Together they install RHOAI in that role, and `ai-grid/enabled` joins the grid; without a role nothing is installed ([apps/ai-grid-spokes](../../../apps/ai-grid-spokes/README.md)). Unlabelling withdraws it from the grid and stops managing those workloads, but does not uninstall them, and keeps its GridNetwork; its MaaS database replica and the catalog's MaaS objects and subscriptions there are the exceptions, deleted because they hold or grant tenants' access.
 
@@ -109,7 +113,7 @@ acm-models brings the sample model and its MaaS objects, to AI Grid sites by rol
 
 The hub runs MaaS's shared state: the maas-db primary, Keycloak and Limitador's Redis. Sites reach them over Submariner, and ingress and combined sites get a maas-db read replica. To hold that state on one site instead, label it ai-grid/external-services=true, and [apps/external-services](../../../apps/external-services) installs them there. Do not use both. The default ApplicationSet skips external-services, because a combined hub runs them itself.
 
-The profile sets two grid-bootstrap values for a new grid on its own hub: external.certManager.ca.mode Generate, and managedClusters.createClusterSetBinding true, since no RHOAI app binds ClusterSet global into redhat-ai-grid there. Keep Generate for the life of the hub: its CA is a cert-manager Certificate.
+A new grid on its own hub sets external.certManager.ca.mode Generate in the deployment's `values/grid-bootstrap.yaml`; grid-bootstrap's own values bind ClusterSet global into redhat-ai-grid. Keep Generate for the life of the hub: its CA is a cert-manager Certificate.
 
 rhoai-prerequisites delivers the quay.io/rhoai mirror and pull Secret to every cluster in global, the hub included. The grid-enrollment image needs them, so set RHOAI_QUAY_PULL_SECRET before bootstrap.sh, as for any hub. Without it, grid-bootstrap's CA Job stays in ImagePullBackOff. Applying the mirror reboots each node once, so a single-node hub drops out for a few minutes. To avoid the mirror, pin the grid-enrollment image to the public ODH build in the grid-bootstrap values.
 

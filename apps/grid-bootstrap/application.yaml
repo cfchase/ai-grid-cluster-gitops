@@ -14,8 +14,11 @@ spec:
     - repoURL: '@deploymentRepoURL@'
       targetRevision: '@deploymentRevision@'
       ref: deployment
+    # A commit, not a branch: pinning the library pins the enrollment chart, so
+    # it can't drift from the image digest in values.yaml. Move with
+    # apps/ai-grid-usage-logs' pin.
     - repoURL: https://github.com/opendatahub-io/odh-gitops.git
-      targetRevision: main
+      targetRevision: 05f8bc79df6656efd2d82adecdf764862b27ea02 # main, 2026-11-09
       path: charts/rhai-on-openshift-chart/charts/grid-enrollment
       helm:
         releaseName: grid-bootstrap

@@ -1,13 +1,17 @@
 # Internal model deployments
 
-This app owns the internal `LLMInferenceService` deployment and its
-model-facing MaaS resources. Supporting namespaces, NetworkPolicies, and the
-Grid `ExternalProvider` are owned by the RHOAI apps.
+This app delivers the provider console's catalog: the models and
+subscriptions the console commits to the catalog repository (below).
+Supporting namespaces, NetworkPolicies, and the Grid `ExternalProvider` are
+owned by the RHOAI apps.
 
-The sample model goes to AI Grid sites where models run (Placement
-`ai-grid-inference`), and its MaaS objects to sites that run MaaS
-(`ai-grid-ingress`); both Placements are `apps/ai-grid-spokes`'. An unlabelled
-hub gets neither.
+The library's sample models, their MaaS objects and upstream lab's sample
+subscriptions are a separate component, `apps/acm-models-samples`, which a
+deployment selects only for a demo. Its sample model goes to AI Grid sites
+where models run (Placement `ai-grid-inference`), and its MaaS objects to
+sites that run MaaS (`ai-grid-ingress`); both Placements are
+`apps/ai-grid-spokes`'. An unlabelled hub gets neither. The rest of this
+README's model notes (scheduler metrics, certificates) describe those samples.
 
 ## Scheduler metrics
 

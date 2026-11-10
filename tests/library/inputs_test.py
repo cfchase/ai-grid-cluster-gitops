@@ -10,9 +10,9 @@ local-config ConfigMap library-inputs (values REQUIRED-<name>) and
 replacements, which the owning application.yaml patches with the same tokens.
 
 Checks, each reported as ok or FAIL:
-  static-revision  no upstream URL and no HEAD revision under apps/, bootstrap/,
-                   cluster-config/ (Markdown, tests and upstream's legacy lab
-                   roots excepted)
+  static-revision  no upstream URL and no HEAD, main or master revision for any
+                   repository under apps/, bootstrap/, cluster-config/
+                   (Markdown, tests and upstream's legacy lab roots excepted)
   static-catalog   no lab catalog repository under those directories
   components       each apps/*/application.yaml and cluster-config/application.yaml,
                    with sample-inputs.yaml substituted the way the root does it,
@@ -29,7 +29,8 @@ Checks, each reported as ok or FAIL:
                    rendered as the ApplicationSet controller does
                    (tests/library/templatepatch, needs Go), passes the
                    components checks; an input left out or left REQUIRED- fails
-                   with "missing input: <name>"
+                   with "missing input: <name>"; exactly one component binds
+                   the global cluster set into redhat-ai-grid
   deployment-values  per-cluster rhoai values and the grid's values (its CA
                    mode) come from the deployment repository, not the library
   admins           no user names in cluster-config/ or apps/gitops-config/;
@@ -37,9 +38,12 @@ Checks, each reported as ok or FAIL:
   object-storage   ACM renders no bucket; apps/object-storage offers ODF and S4,
                    each its own component, S4's credentials from Password
                    generators, never literal Secrets
+  samples          no model, MaaS object or subscription outside the selectable
+                   apps/acm-models-samples component
   idp              the tenant Policy reads the IdP inputs (issuer, client,
-                   client-secret Secret, CA ConfigMap), names no library
-                   Keycloak, and its ServiceAccount can read both inputs
+                   client-secret Secret, CA ConfigMap), no manifest outside
+                   apps/keycloak names the library's Keycloak, and the Policy's
+                   ServiceAccount can read both inputs, by name only
 
 Run: bash tests/library/inputs-test.sh   (needs python3 with PyYAML, kustomize)
 """
@@ -63,7 +67,9 @@ STATIC_DIRS = ("apps", "bootstrap", "cluster-config")
 LEGACY_ROOTS = {"bootstrap/applicationset.yaml", "bootstrap/dedicated-hub/applicationset.yaml"}
 REVISION_PATTERNS = [
     re.compile(r"ai-grid-cloud/ai-grid-cluster-gitops"),
-    re.compile(r"\b(target)?[rR]evision:\s*['\"]?HEAD\b"),
+    # Any git source, this repository's or another's: a branch moves under a
+    # pinned library commit.
+    re.compile(r"\b(target)?[rR]evision:\s*['\"]?(HEAD|main|master)['\"]?\s*(#.*)?$"),
 ]
 CATALOG_PATTERNS = [re.compile(r"ai-grid-shared-catalog")]
 # Repositories a component may read that no deployment chooses: products and
@@ -137,7 +143,7 @@ def grep(patterns, label):
 
 @check("static-revision")
 def static_revision():
-    grep(REVISION_PATTERNS, "upstream self-reference")
+    grep(REVISION_PATTERNS, "upstream self-reference or moving revision")
 
 
 @check("static-catalog")
@@ -163,6 +169,8 @@ def check_repo(where, repo, revision, inputs):
         fail("%s: repository %s is not an input or a known external repository" % (where, repo))
     elif expected is not None and revision != expected:
         fail("%s: %s repository at revision %r, not the %s input" % (where, kind, revision, kind + "Revision"))
+    elif kind == "external" and revision in (None, "", "HEAD", "main", "master"):
+        fail("%s: %s at %r, a moving revision; pin a commit or version" % (where, repo, revision))
     return kind
 
 
@@ -265,7 +273,9 @@ def component_files():
 
 
 def check_application(where, app, inputs):
-    """One Application's sources, and what each library source renders."""
+    """One Application's sources, and what each library source renders.
+    Returns the rendered objects of its library sources."""
+    rendered = []
     scan_text(where, yaml.safe_dump(app))
     for index, source in enumerate(sources_of(app.get("spec", {}))):
         source_where = "%s source %d" % (where, index)
@@ -291,7 +301,10 @@ def check_application(where, app, inputs):
                 fail("%s: kustomize options on %s, which has no kustomization.yaml" % (source_where, source["path"]))
             output = read_directory(directory, (source.get("directory") or {}).get("recurse", False))
         scan_text("%s (%s)" % (source_where, source["path"]), output)
-        check_nested("%s (%s)" % (source_where, source["path"]), list(yaml.safe_load_all(output)), inputs)
+        documents = [doc for doc in yaml.safe_load_all(output) if isinstance(doc, dict)]
+        check_nested("%s (%s)" % (source_where, source["path"]), documents, inputs)
+        rendered.extend(documents)
+    return rendered
 
 
 @check("components")
@@ -393,12 +406,26 @@ def root_render(inputs):
     appset = load_root()
     first = appset["spec"]["generators"][0]["git"]
     paths = [item["path"] for item in first["files"]] + [ODF]
+    bindings = []
     for path in paths:
         patch, error = render_patch(renderer, appset, root_params(path, inputs))
         if error:
             fail("%s: templatePatch failed: %s" % (path, error))
             continue
-        check_application("%s through the root" % path, {"spec": patch["spec"]}, inputs)
+        for doc in check_application("%s through the root" % path, {"spec": patch["spec"]}, inputs):
+            meta = doc.get("metadata", {})
+            if (doc.get("kind"), meta.get("namespace"), meta.get("name")) == \
+                    ("ManagedClusterSetBinding", "redhat-ai-grid", "global"):
+                bindings.append(path)
+    # The grid-enrollment invite Placements select through the global cluster
+    # set bound into redhat-ai-grid. The root deletes rhoai's binding, so the
+    # grid-enrollment chart (an external chart) must render it, from the
+    # library's own grid values.
+    grid = load("apps/grid-bootstrap/values.yaml").get("managedClusters", {})
+    if grid.get("createClusterSetBinding") is True:
+        bindings.append("apps/grid-bootstrap (managedClusters.createClusterSetBinding)")
+    if len(bindings) != 1:
+        fail("exactly one component must bind global into redhat-ai-grid, found %s" % (bindings or "none"))
     # A deployment that leaves out an input, or leaves its REQUIRED- default,
     # gets an error naming it and no Application.
     for name, values in (("left out", {k: v for k, v in inputs.items() if k != "libraryRevision"}),
@@ -571,6 +598,19 @@ def idp(inputs):
         for word in IDP_FORBIDDEN:
             if word in text:
                 fail("%s names %s, the library's Keycloak" % (rel(path), word))
+    # Outside apps/keycloak, no manifest may reach the library's Keycloak by
+    # its Route, Secret, realm or client ("maas-db" alone is also the
+    # database's namespace, so it's checked only in apps/rhoai).
+    keycloak = os.path.join("apps", "keycloak") + os.sep
+    for path in library_files(("apps",)):
+        relative = rel(path)
+        if relative.startswith(keycloak) or not relative.endswith((".yaml", ".json")):
+            continue
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+        for word in IDP_FORBIDDEN[1:] + ('"Route" "maas-db" "keycloak"',):
+            if word in text and not relative.startswith(os.path.join("apps", "rhoai") + os.sep):
+                fail("%s names %s, the library's Keycloak; that belongs in apps/keycloak" % (relative, word))
     documents = rendered_rhoai_hub(inputs)
     policy = next((doc for doc in documents if doc["kind"] == "Policy"
                    and doc["metadata"]["name"] == "rhoai-ingress-clusters"), None)
@@ -612,6 +652,27 @@ def idp(inputs):
                      % (namespace, role["metadata"]["name"], rule, name))
 
 
+SAMPLES = os.path.join("apps", "acm-models-samples") + os.sep
+CATALOG_KINDS = ("MaaSSubscription", "MaaSAuthPolicy", "LLMInferenceService", "ExternalModel", "MaaSModelRef")
+
+
+@check("samples")
+def samples():
+    """Models and subscriptions are the catalog's. The library's own samples
+    (and the lab's subscriptions) are one component a deployment selects."""
+    if not os.path.isfile(os.path.join(ROOT, SAMPLES, "application.yaml")):
+        fail("%sapplication.yaml is missing" % SAMPLES)
+    for path in library_files(("apps",)):
+        relative = rel(path)
+        if relative.startswith(SAMPLES) or not relative.endswith(".yaml") or "/templates/" in relative:
+            continue
+        with open(path) as handle:
+            for kind in CATALOG_KINDS:
+                if re.search(r"^kind: %s$" % kind, handle.read(), re.M):
+                    fail("%s: a %s outside %s" % (relative, kind, SAMPLES))
+                handle.seek(0)
+
+
 @check("bare-inputs")
 def bare_inputs():
     found = 0
@@ -641,6 +702,7 @@ def main():
     admins()
     object_storage(inputs)
     idp(inputs)
+    samples()
     failed = sum(1 for _, ok in results if not ok)
     print("inputs tests: %d ok, %d failed" % (len(results) - failed, failed))
     return 1 if failed else 0
