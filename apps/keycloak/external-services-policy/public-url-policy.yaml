@@ -1,8 +1,7 @@
 # Keycloak's public URL on the external-services cluster: the library's
-# Keycloak there (apps/external-services/keycloak) reads ConfigMap
-# maas-db/keycloak-public-url. Moved from apps/external-services/hub, which
-# includes this directory, so the only manifests that name the library's
-# Keycloak live in apps/keycloak. Guarded: a cluster with no Route
+# Keycloak there (apps/keycloak-external-services/keycloak) reads ConfigMap
+# maas-db/keycloak-public-url. apps/keycloak-external-services/hub includes
+# this directory and binds it to apps/external-services' Placement. Guarded: a cluster with no Route
 # maas-db/keycloak gets nothing, instead of a template error.
 apiVersion: policy.open-cluster-management.io/v1
 kind: Policy

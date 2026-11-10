@@ -38,6 +38,8 @@ Checks, each reported as ok or FAIL:
   object-storage   ACM renders no bucket; apps/object-storage offers ODF and S4,
                    each its own component, S4's credentials from Password
                    generators, never literal Secrets
+  keycloak-separable  nothing outside apps/keycloak* installs or includes
+                   Keycloak (the root's files list excepted)
   samples          no model, MaaS object or subscription outside the selectable
                    apps/acm-models-samples component
   idp              the tenant Policy reads the IdP inputs (issuer, client,
@@ -673,6 +675,25 @@ def samples():
                 handle.seek(0)
 
 
+KEYCLOAK_REFERENCE = re.compile(r"(apps/keycloak\b|\.\./keycloak\b|external-services/keycloak\b)")
+
+
+@check("keycloak-separable")
+def keycloak_separable():
+    """Keycloak is installed only by components named apps/keycloak*:
+    selecting another component (external-services) brings no Keycloak."""
+    for path in library_files(("apps", "bootstrap", "cluster-config")):
+        relative = rel(path)
+        if relative.startswith("apps/keycloak") or relative in LEGACY_ROOTS \
+                or not relative.endswith((".yaml", ".yml", ".json")):
+            continue
+        with open(path, encoding="utf-8") as handle:
+            for number, line in enumerate(handle, 1):
+                code = line.split("#", 1)[0] if not line.lstrip().startswith("#") else ""
+                if KEYCLOAK_REFERENCE.search(code) and "application.yaml" not in code:
+                    fail("%s:%d references the Keycloak component: %s" % (relative, number, line.strip()))
+
+
 @check("bare-inputs")
 def bare_inputs():
     found = 0
@@ -703,6 +724,7 @@ def main():
     object_storage(inputs)
     idp(inputs)
     samples()
+    keycloak_separable()
     failed = sum(1 for _, ok in results if not ok)
     print("inputs tests: %d ok, %d failed" % (len(results) - failed, failed))
     return 1 if failed else 0
