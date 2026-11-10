@@ -277,15 +277,30 @@ make_plan hub "$tmp/plan"
 admin_binding_kept "$hub_kc" hub "$tmp/plan"
 
 say "stop Argo CD (ApplicationSets orphan their Applications; Applications lose their finalizers)"
-for a in $(H get applicationsets.argoproj.io -n openshift-gitops -o name 2>/dev/null); do del "$hub_kc" "$a" -n openshift-gitops --cascade=orphan; done
-$dry_run || wait_gone "$hub_kc" 120 "ApplicationSets" applicationsets.argoproj.io -n openshift-gitops
-for a in $(H get applications.argoproj.io -n openshift-gitops -o name 2>/dev/null); do
-  if $dry_run; then echo "would remove finalizers and delete: $a"
-  else
-    H patch "$a" -n openshift-gitops --type merge -p '{"metadata":{"finalizers":null}}' >/dev/null
-    H delete "$a" -n openshift-gitops --ignore-not-found --wait=false
-  fi
-done
+# In rounds until nothing is left: an Application that's still there (the deployment's
+# root) self-heals the ApplicationSets back while the others are deleted (proto-hub,
+# 2026-11-10), and those regenerate every Application.
+stop_argo_round() {
+  local a
+  for a in $(H get applications.argoproj.io -n openshift-gitops -o name 2>/dev/null); do
+    if $dry_run; then echo "would remove finalizers and delete: $a"
+    else H patch "$a" -n openshift-gitops --type merge -p '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true; fi
+  done
+  $dry_run || H delete applications.argoproj.io --all -n openshift-gitops --ignore-not-found --wait=false >/dev/null
+  for a in $(H get applicationsets.argoproj.io -n openshift-gitops -o name 2>/dev/null); do del "$hub_kc" "$a" -n openshift-gitops --cascade=orphan; done
+}
+argo_left() { H get applications.argoproj.io,applicationsets.argoproj.io -n openshift-gitops -o name 2>/dev/null; }
+if $dry_run; then stop_argo_round
+else
+  quiet=0
+  for round in $(seq 1 20); do
+    if [ -z "$(argo_left)" ]; then quiet=$((quiet + 1)); [ "$quiet" -ge 2 ] && break
+    else quiet=0; stop_argo_round; fi
+    sleep 15
+  done
+  [ -z "$(argo_left)" ] || die "Argo CD keeps recreating its Applications; stop it by hand and rerun"
+  echo "Argo CD has no Applications or ApplicationSets left (round $round)."
+fi
 
 run_plan "$hub_kc" "$tmp/plan" policies custom-resources acm
 if H get multiclusterengines.multicluster.openshift.io >/dev/null 2>&1; then
