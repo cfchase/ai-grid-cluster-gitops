@@ -39,6 +39,10 @@ creates no Application. Values must not contain `"`, `\`, `'` or `@`.
 | `idpClientSecretNamespace`, `idpClientSecretName`, `idpClientSecretKey` | the hub Secret holding that client's secret |
 | `idpCANamespace`, `idpCAName`, `idpCAKey` | the hub ConfigMap holding the CA that signs the issuer's certificate |
 
+The tenant Policy reads the `idpClientSecret*` Secret and the `idpCA*`
+ConfigMap through a ServiceAccount that may read only those two objects, by
+name.
+
 Directories whose manifests take inputs (nested ApplicationSets, Policies) are
 kustomizations with an `inputs.yaml`. A bare `kustomize build` of one shows
 each input as `REQUIRED-<name>`.

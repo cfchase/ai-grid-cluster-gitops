@@ -26,7 +26,7 @@ secrets = [t["objectDefinition"] for t in secret_policy["spec"]["object-template
 assert [s["metadata"]["namespace"] for s in secrets] == [tenant_namespace], secrets
 assert secret_policy["spec"]["namespaceSelector"]["include"] == [tenant_namespace]
 secret = secrets[0]
-assert secret["metadata"]["name"] == "tenant-demo-oidc-client"
+assert secret["metadata"]["name"] == "tenant-oidc-client"
 assert set(secret["data"]) == {"clientSecret"}
 
 tenant_policy = next(template for template in templates
@@ -34,31 +34,25 @@ tenant_policy = next(template for template in templates
 tenant = tenant_policy["spec"]["object-templates"][0]["objectDefinition"]
 assert tenant["metadata"]["namespace"] == "ai-tenants"
 assert tenant["spec"]["oidc"]["clientSecretRef"] == {
-    "name": "tenant-demo-oidc-client",
+    "name": "tenant-oidc-client",
     "key": "clientSecret",
 }
 
-maas_role = next(document for document in rbac_documents
-                 if document and document.get("kind") == "Role"
-                 and document["metadata"]["namespace"] == "maas-db"
-                 and document["metadata"]["name"] == "rhoai-tenant-templating")
-secret_rules = [rule for rule in maas_role["rules"] if rule.get("resources") == ["secrets"]]
-named_get = next(rule for rule in secret_rules if "get" in rule["verbs"])
-assert named_get["resourceNames"] == ["keycloak-secrets"]
-list_watch = next(rule for rule in secret_rules if "list" in rule["verbs"])
-assert set(list_watch["verbs"]) == {"list", "watch"}
-assert "resourceNames" not in list_watch
-
-route_role = next(document for document in rbac_documents
-                  if document and document.get("kind") == "Role"
-                  and document["metadata"]["name"] == "rhoai-hub-templating-routes")
-assert all("secrets" not in rule.get("resources", []) for rule in route_role["rules"])
-route_binding = next(document for document in rbac_documents
-                     if document and document.get("kind") == "RoleBinding"
-                     and document["metadata"]["name"] == "rhoai-hub-templating-routes")
-assert route_binding["subjects"] == [
-    {"kind": "Group", "name": "system:open-cluster-management:addon:governance-standalone-hub-templating"}
-]
+# The client secret comes from the idpClientSecret* inputs (inputs.yaml), and
+# the templating ServiceAccount may get only that Secret by name.
+assert secret["data"]["clientSecret"] == ('{{hub fromSecret "REQUIRED-idpClientSecretNamespace" '
+                                          '"REQUIRED-idpClientSecretName" "REQUIRED-idpClientSecretKey" hub}}')
+secret_role = next(document for document in rbac_documents
+                   if document and document.get("kind") == "Role"
+                   and document["metadata"]["name"] == "rhoai-tenant-idp-client-secret")
+assert secret_role["metadata"]["namespace"] == "REQUIRED-idpClientSecretNamespace"
+# get, list and watch, all by name: ACM lists and watches the named Secret
+# with a metadata.name field selector, which resourceNames authorizes.
+assert secret_role["rules"] == [{"apiGroups": [""], "resources": ["secrets"],
+                                 "resourceNames": ["REQUIRED-idpClientSecretName"],
+                                 "verbs": ["get", "list", "watch"]}], secret_role["rules"]
+assert not any(document.get("kind") == "Role" and "route.openshift.io" in str(document.get("rules"))
+               for document in rbac_documents if document), "the tenant Policy looks up no Route"
 
 addons = [document for document in yaml.safe_load_all(open(sys.argv[3])) if document]
 templating = next(addon for addon in addons
