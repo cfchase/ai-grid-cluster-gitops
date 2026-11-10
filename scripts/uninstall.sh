@@ -164,6 +164,12 @@ run_plan() { # KUBECONFIG PLANFILE GROUP...: delete one group at a time, waiting
       if [ "$kind" = Subscription.v1alpha1.operators.coreos.com ]; then del_subscription "$kc" "$kind" "$name" "$ns"
       elif [ -n "$ns" ]; then del "$kc" "$kind" "$name" -n "$ns"
       else del "$kc" "$kind" "$name"; fi
+      # ACM refuses to delete MultiClusterHub while MultiClusterObservability exists, so the
+      # acm group goes one object at a time, in the plan's order (proto-hub, 2026-11-10).
+      if [ "$group" = acm ]; then
+        if [ -n "$ns" ]; then wait_gone "$kc" 1800 "$kind $ns/$name" "$kind" "$name" -n "$ns"
+        else wait_gone "$kc" 1800 "$kind $name" "$kind" "$name"; fi
+      fi
     done < "$plan"
     while IFS=$'\t' read -r g kind ns name; do
       [ "$g" = "$group" ] || continue
