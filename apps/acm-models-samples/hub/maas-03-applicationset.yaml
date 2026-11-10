@@ -37,7 +37,7 @@ spec:
       source:
         repoURL: REQUIRED-libraryRepoURL
         targetRevision: REQUIRED-libraryRevision
-        path: apps/acm-models/maas
+        path: apps/acm-models-samples/maas
         directory:
           recurse: true
       destination:

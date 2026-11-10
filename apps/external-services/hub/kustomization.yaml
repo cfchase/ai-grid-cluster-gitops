@@ -8,6 +8,7 @@ resources:
   - 01-managed-cluster-set-binding.yaml
   - 02-placement.yaml
   - 03-policies.yaml
+  - ../../keycloak/external-services-policy
   - 04-placement-bindings.yaml
   - 05-applicationset.yaml
 replacements:
