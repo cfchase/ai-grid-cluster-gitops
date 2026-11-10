@@ -32,6 +32,8 @@ Checks, each reported as ok or FAIL:
                    with "missing input: <name>"
   deployment-values  per-cluster rhoai values and the grid's values (its CA
                    mode) come from the deployment repository, not the library
+  admins           no user names in cluster-config/ or apps/gitops-config/;
+                   cluster admins come from the deployment's values
 
 Run: bash tests/library/inputs-test.sh   (needs python3 with PyYAML, kustomize)
 """
@@ -453,6 +455,30 @@ def deployment_values():
         fail("the root's templatePatch sets the grid CA mode; the deployment states it")
 
 
+@check("admins")
+def admins():
+    """Who administers a cluster is the deployment's choice."""
+    if os.path.exists(os.path.join(ROOT, "cluster-config", "cluster-admins.yaml")):
+        fail("cluster-config/cluster-admins.yaml lists a deployment's admins")
+    for path in library_files(("cluster-config", os.path.join("apps", "gitops-config"))):
+        if not path.endswith((".yaml", ".yml")) or "/templates/" in path:
+            continue
+        with open(path) as handle:
+            for doc in yaml.safe_load_all(handle):
+                if isinstance(doc, dict) and doc.get("kind") == "Group" and doc.get("users"):
+                    fail("%s: Group %s lists users" % (rel(path), doc["metadata"]["name"]))
+                if isinstance(doc, dict) and doc.get("cluster_admins"):
+                    fail("%s: cluster_admins lists users" % rel(path))
+    appset = load("cluster-config/hub/00-applicationset.yaml")
+    sources = appset["spec"]["template"]["spec"]["sources"]
+    if not any(source.get("ref") == "deployment" for source in sources):
+        fail("cluster-config/hub/00-applicationset.yaml: no source with ref deployment")
+    chart = helm_source(sources, lambda s: "helm" in s)
+    files = (chart or {}).get("helm", {}).get("valueFiles") or []
+    if files != ["$values/cluster-config/values.yaml", "$deployment/values/cluster-admins.yaml"]:
+        fail("cluster-config value files are %s" % files)
+
+
 @check("bare-inputs")
 def bare_inputs():
     found = 0
@@ -479,6 +505,7 @@ def main():
     root(inputs)
     root_render(inputs)
     deployment_values()
+    admins()
     failed = sum(1 for _, ok in results if not ok)
     print("inputs tests: %d ok, %d failed" % (len(results) - failed, failed))
     return 1 if failed else 0
