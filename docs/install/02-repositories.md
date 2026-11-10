@@ -22,7 +22,7 @@ Your hub installs from two repositories you own: a **deployment repository** wit
    ```sh
    git clone https://github.com/cfchase/ai-grid-deployment-proto.git example
    git clone DEPLOYMENT_REPO_URL deployment
-   cp -R example/root example/values example/apps example/scripts example/bootstrap.sh deployment/
+   cp -R example/root example/values example/apps deployment/
    rm -rf deployment/values/clusters/* deployment/apps/*
    ```
 
@@ -58,6 +58,15 @@ The root takes the library's `bootstrap/hub` at one commit. Every component then
    ```
 
    You should see the same SHA on every `ref=`, generator `revision` and `libraryRevision` line.
+
+3. Check out the library at that commit, next to your deployment checkout. The scripts this guide runs come from it,
+   so they always match your pin:
+
+   ```sh
+   git clone -q LIBRARY_REPO_URL ../library && git -C ../library checkout -q LIBRARY_SHA
+   ```
+
+   Replace `LIBRARY_SHA` with the full SHA. After an upgrade, check out the new SHA here too.
 
 ## 3. Select components
 
@@ -147,7 +156,7 @@ Your deployment repository holds three kinds of values file. The library reads t
 1. Render the root and check for unset inputs:
 
    ```sh
-   scripts/render.sh
+   ../library/scripts/check-deployment.sh .
    ```
 
    You should see `root renders; every input is set; every repository is an input.`
@@ -167,6 +176,6 @@ Your deployment repository holds three kinds of values file. The library reads t
 
 ## Checkpoint
 
-- `scripts/render.sh` prints `root renders; every input is set; every repository is an input.`
+- `../library/scripts/check-deployment.sh .` prints `root renders; every input is set; every repository is an input.`
 - `root/self.yaml` points at your deployment repository.
 - Both repositories are pushed, and the catalog repository has a `main` branch.

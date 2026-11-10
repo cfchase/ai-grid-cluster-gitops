@@ -33,11 +33,11 @@ and [OpenShift AI prerequisites](./rhoai-prerequisites.md) delivers it and the m
    - path: apps/rhoai-prerequisites/application.yaml
    ```
 
-3. Run your bootstrap script with the auth file. With the example's
-   [`bootstrap.sh`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/bootstrap.sh):
+3. Run the library's [`scripts/bootstrap-hub.sh`](../../../scripts/bootstrap-hub.sh) with the auth file, from your
+   deployment checkout:
 
    ```sh
-   KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=AUTH_FILE ./bootstrap.sh
+   KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=AUTH_FILE ../library/scripts/bootstrap-hub.sh --deployment .
    ```
 
    Replace the following:
@@ -57,7 +57,7 @@ and [OpenShift AI prerequisites](./rhoai-prerequisites.md) delivers it and the m
 
 4. Add a `registry.stage.redhat.io` login to the same auth file before you run the bootstrap script:
    `podman login registry.stage.redhat.io`. The mirror sends every `registry.redhat.io/rhaii*` image, model runtimes
-   included, there and never contacts the source, so every site needs it. The example's `bootstrap.sh` passes it to
+   included, there and never contacts the source, so every site needs it. `bootstrap-hub.sh` passes it to
    `create-hub-secret.sh` as `RHOAI_STAGE_PULL_SECRET`, and warns when the auth file has none. *(Unverified: the
    tested site already had the model image.)*
 

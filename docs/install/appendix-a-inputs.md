@@ -14,7 +14,7 @@ documents the same contract for library maintainers.
 | `values/grid-bootstrap.yaml` | Yes | `grid-bootstrap` | `external.certManager.ca.mode` (`Generate` or `Existing`); `managedClusters.createClusterSetBinding` (default `true`) |
 | `values/clusters/SITE/rhoai.yaml` | For each ingress and combined site | `rhoai` | `components.aigateway.modelsAsAService.gateway.annotations.ai-grid/maas-gateway-hostname-prefix`; optionally the gateway's `spec.listeners` |
 | `root/kustomization.yaml` | Yes | `deployment-root` | The pin, the selection, the inputs |
-| `root/self.yaml` | Yes | `bootstrap.sh` | Application `deployment-root` |
+| `root/self.yaml` | Yes | `scripts/bootstrap-hub.sh` | Application `deployment-root` |
 | `apps/*.yaml` | No | your root's own-apps generator | Your own Applications; they may use `@NAME@` inputs |
 
 ## ManagedCluster labels

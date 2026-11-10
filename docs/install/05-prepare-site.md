@@ -30,7 +30,7 @@ If the site's only sign-in is an external identity provider, add the htpasswd ad
 
 ```sh
 oc config use-context "$SITE_CONTEXT"
-scripts/add-htpasswd-admin.sh --kubeconfig SITE_KUBECONFIG --password-file SITE_ADMIN_PASSWORD_FILE
+../library/scripts/add-htpasswd-admin.sh --kubeconfig SITE_KUBECONFIG --password-file SITE_ADMIN_PASSWORD_FILE
 ```
 
 Sign in once as `admin` with the `htpasswd` provider to confirm it.
@@ -41,15 +41,15 @@ A cluster that was a site of another hub must leave that hub first, then lose it
 
 1. On the old hub, remove the site's labels and wait for its Applications to go, then delete its ManagedCluster.
    Delete its Argo CD cluster Secret and grid identity Secret if they stay behind.
-2. Preview the wipe with the example's script:
+2. Preview the wipe with the library's script:
 
    ```sh
-   scripts/wipe-site.sh --kubeconfig SITE_KUBECONFIG --dry-run
+   ../library/scripts/wipe-site.sh --kubeconfig SITE_KUBECONFIG --dry-run
    ```
 
    Read the list. It must not name your platform's identity provider, cert-manager, NFD, the GPU operator or your
-   ACME ClusterIssuers; the script protects those by name. Edit the script's protected lists if your platform uses
-   other names.
+   ACME ClusterIssuers; the script protects those by name. If your platform uses other names, add them, space-separated,
+   in `WIPE_PROTECT_NAMESPACES` and `WIPE_PROTECT_PACKAGES` (operator package names) before both runs.
 
 3. Run it without `--dry-run`. It removes models, MaaS objects, the DataScienceCluster, the grid, the gateways, their
    operators and leftover webhooks, in that order, and leaves the cluster pull secret and image mirror (removing a

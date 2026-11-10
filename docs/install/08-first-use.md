@@ -5,13 +5,13 @@ call it as a tenant. The provider console writes the model and subscription to y
 delivers them to the site.
 
 The tested run made each console call through the console's API, the same calls its pages make, with the example's
-[`scripts/console-call.sh`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/scripts/console-call.sh).
+library's [`scripts/console-call.sh`](../../scripts/console-call.sh).
 The page steps are given too, and are *(Unverified.)* in this release of the guide.
 
 `console-call.sh` signs in as an OpenShift user through the htpasswd provider and makes one call:
 
 ```sh
-scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE METHOD 'JSON'
+../library/scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE METHOD 'JSON'
 ```
 
 ## 1. Sign in to the console
@@ -26,7 +26,7 @@ In the console, go to **Organizations**, click **Create**, and enter a name and 
 Or through the API:
 
 ```sh
-scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE \
+../library/scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE \
   ai_grid.v1.Tenants/Create '{"object":{"metadata":{"name":"ORG_NAME"},"spec":{"domains":["ORG_DOMAIN"]}}}'
 ```
 
@@ -50,7 +50,7 @@ In the console, go to **Models**, click **Deploy**, choose the model URI, the ru
 Or through the API:
 
 ```sh
-scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE ai_grid.v1.Models/Create '{
+../library/scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE ai_grid.v1.Models/Create '{
   "object": {
     "id": "smollm2-chat",
     "metadata": {"name": "smollm2-chat", "annotations": {"openshift.io/display-name": "SmolLM2 135M Instruct"}},
@@ -81,7 +81,7 @@ In the console, go to **Subscriptions**, click **Create**, choose the organizati
 Or through the API:
 
 ```sh
-scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE ai_grid.v1.Subscriptions/Create '{
+../library/scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE ai_grid.v1.Subscriptions/Create '{
   "object": {
     "id": "SUBSCRIPTION_ID",
     "metadata": {"name": "SUBSCRIPTION_ID"},

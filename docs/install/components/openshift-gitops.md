@@ -13,7 +13,7 @@ your deployment repository, and the catalog. Every other component depends on it
 ## Use ours
 
 1. Install the operator and the root with the example deployment's
-   [`bootstrap.sh`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/bootstrap.sh), described in
+   [`scripts/bootstrap-hub.sh`](../../../scripts/bootstrap-hub.sh), described in
    [Prepare the hub](../03-prepare-hub.md). For OpenShift GitOps it does the following, from the library at the
    commit your root pins:
 
