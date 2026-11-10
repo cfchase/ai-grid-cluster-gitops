@@ -1,0 +1,18 @@
+# Every input a deployment sets in the root ApplicationSet's generator values,
+# with distinct fake values. inputs_test.py substitutes these for @<name>@ and
+# checks that each component resolves to them and to nothing else.
+# Values must not contain ", \, ' or @.
+libraryRepoURL: https://example.invalid/library.git
+libraryRevision: 0123456789abcdef0123456789abcdef01234567
+deploymentRepoURL: https://example.invalid/deployment.git
+deploymentRevision: deployment-revision
+catalogRepoURL: https://example.invalid/catalog.git
+catalogRevision: catalog-revision
+idpIssuerURL: https://idp.example.invalid/realms/sample-realm
+idpClientID: sample-client-id
+idpClientSecretNamespace: sample-secret-namespace
+idpClientSecretName: sample-secret-name
+idpClientSecretKey: sample-secret-key
+idpCANamespace: sample-ca-namespace
+idpCAName: sample-ca-name
+idpCAKey: sample-ca-key
