@@ -141,10 +141,13 @@ only the hub's flags; until every site is uninstalled, its preview warns that si
 
 ### 3. Uninstall each site
 
-Run the site command without `--dry-run`, for each site. It:
+Run the site command without `--dry-run`, for each site, and add `--plan-file SITE-uninstall-plan.tsv`. The plan
+comes from the site's Applications on the hub, which the first steps remove; if the run stops partway, run the same
+command again with the same plan file to resume. It:
 
 1. Removes the site's `ai-grid/enabled` and `ai-grid/role` labels and waits for its Applications to go.
-2. Detaches the site from ACM, and deletes the Argo CD cluster Secret and grid identity the detach leaves on the hub.
+2. Detaches the site from ACM, deletes the Argo CD cluster Secret and grid identity the detach leaves on the hub, and
+   waits for ACM to remove the site's agent.
 3. Deletes from the site, in order: models while KServe runs; MaaS objects, including `MaaSTenantConfig` and
    `AITenant`, before the DataScienceCluster; the DataScienceCluster and its components; the grid's `GridNetwork` and
    `GridSite`; the AI Grid gateways and their EnvoyFilters; the operators; their leftover webhooks; their namespaces.

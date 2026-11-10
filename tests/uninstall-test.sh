@@ -92,4 +92,8 @@ if grep -q "would delete: ns ai-tenants" <<<"$out" && ! grep -q "would delete: n
 else fails=$((fails+1)); echo "   FAIL only leftover namespaces that exist are swept"; fi
 world; printf 'ai-tenants\n' > "$T/site.kc.ns"; WPN=ai-tenants t "a deployment's protected namespace isn't swept" 0 "kept \(protected namespace\): ai-tenants" --step site --dry-run "${HUB[@]}" "${SITE[@]}"
 world; printf 'default-broker\n' > "$T/hub.kc.ns"; t "the hub's leftover namespaces are swept" 0 "would delete: ns default-broker" --step hub --dry-run "${HUB[@]}"
+world; printf 'custom-resources\tCluster.v1.postgresql.cnpg.io\tmaas-db\tsaved-plan-object\n' > "$T/plan.tsv"
+t "a saved plan file is reused" 0 "would delete: Cluster.v1.postgresql.cnpg.io saved-plan-object -n maas-db" --step site --dry-run "${HUB[@]}" "${SITE[@]}" --plan-file "$T/plan.tsv"
+world; rm -f "$T/plan2.tsv"; run --step site --dry-run "${HUB[@]}" "${SITE[@]}" --plan-file "$T/plan2.tsv" >/dev/null; total=$((total+1))
+if [ ! -e "$T/plan2.tsv" ]; then echo "   ok   a dry run doesn't write the plan file"; else fails=$((fails+1)); echo "   FAIL a dry run wrote the plan file"; fi
 echo "uninstall tests: $((total-fails)) ok, $fails failed"; exit "$fails"

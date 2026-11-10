@@ -5,13 +5,17 @@
 #   uninstall.sh --step site --hub-kubeconfig PATH --expect-hub-api URL \
 #                --site NAME --site-kubeconfig PATH --expect-site-api URL \
 #                --admin-password-file PATH [--site-admin-password-file PATH]
-#                [--admin-user admin] [--dry-run]
+#                [--plan-file PATH] [--admin-user admin] [--dry-run]
 #   uninstall.sh --step hub  --hub-kubeconfig PATH --expect-hub-api URL \
 #                --admin-password-file PATH [--admin-user admin] [--dry-run]
 #
 # --dry-run prints every step and every object it would delete, in order, and
 # deletes nothing. The object list comes from Argo CD's own inventory
 # (uninstall-plan.py); operators then remove what they created.
+#
+# --plan-file saves the site's plan on the first run and reuses it on a rerun.
+# The plan comes from the site's Applications on the hub, which the first run
+# removes, so a site step that stops partway can only resume with its plan file.
 #
 # Safety:
 # - Refuses a cluster whose API URL isn't --expect-*-api.
@@ -28,7 +32,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 say() { printf '\n== %s\n' "$*"; }
 
-step="" hub_kc="" hub_api="" site="" site_kc="" site_api="" pw_file="" site_pw_file="" user=admin dry_run=false
+step="" hub_kc="" hub_api="" site="" site_kc="" site_api="" pw_file="" site_pw_file="" plan_file="" user=admin dry_run=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --step) step=$2; shift 2 ;;
@@ -39,6 +43,7 @@ while [ $# -gt 0 ]; do
     --expect-site-api) site_api=$2; shift 2 ;;
     --admin-password-file) pw_file=$2; shift 2 ;;
     --site-admin-password-file) site_pw_file=$2; shift 2 ;;
+    --plan-file) plan_file=$2; shift 2 ;;
     --admin-user) user=$2; shift 2 ;;
     --dry-run) dry_run=true; shift ;;
     -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -178,7 +183,14 @@ if [ "$step" = site ]; then
   fi
 
   say "inventory of $site"
-  make_plan site "$tmp/plan"
+  if [ -n "$plan_file" ] && [ -s "$plan_file" ]; then
+    cp "$plan_file" "$tmp/plan"
+    echo "$(wc -l < "$tmp/plan" | tr -d ' ') objects planned (saved in $plan_file by an earlier run):"
+    sed 's/^/  /' "$tmp/plan"
+  else
+    make_plan site "$tmp/plan"
+    if [ -n "$plan_file" ] && ! $dry_run; then cp "$tmp/plan" "$plan_file"; echo "plan saved to $plan_file"; fi
+  fi
   admin_binding_kept "$site_kc" "$site" "$tmp/plan"
 
   if $managed; then
@@ -206,6 +218,8 @@ for x in json.load(sys.stdin)["items"]:
         print(x["metadata"]["name"])' "$site"); do del "$hub_kc" secret "$s" -n openshift-gitops; done
     del "$hub_kc" certificates.cert-manager.io "grid-site-$site" -n redhat-ai-grid
     del "$hub_kc" secret "grid-site-$site" -n redhat-ai-grid
+    # The detach removes the site's ACM agent; wipe-site.sh refuses while it's there.
+    wait_gone "$site_kc" 600 "the site's ACM agent" ns open-cluster-management-agent
   else
     echo "$site isn't a ManagedCluster on the hub; going straight to the site."
   fi
