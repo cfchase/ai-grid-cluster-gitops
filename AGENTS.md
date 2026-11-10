@@ -21,8 +21,8 @@ values. Use documented, parameterized scripts for unavoidable runtime inputs.
 ## Build, Validation, and Development Commands
 
 ```sh
-helm lint cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
-helm template cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
+helm lint cluster-config/chart -f cluster-config/values.yaml
+helm template cluster-config/chart -f cluster-config/values.yaml
 bash -n bootstrap.sh docs/acm/cluster-onboarding/import-managed-cluster.sh
 bash tests/library/inputs-test.sh
 ```
