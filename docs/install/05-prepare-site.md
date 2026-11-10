@@ -1,6 +1,6 @@
-# Step 3: prepare each site and join it to ACM
+# Prepare each site and join it to ACM
 
-Repeat this step for every site. Set these in your shell first:
+Repeat this page for every site. Set these in your shell first:
 
 ```sh
 export HUB_CONTEXT=HUB_CONTEXT_NAME SITE_CONTEXT=SITE_CONTEXT_NAME SITE=SITE_NAME
@@ -16,7 +16,7 @@ Replace the following:
 
 | Role | Installs | Needs |
 |---|---|---|
-| `ingress` | OpenShift AI with MaaS, the Org UI, the grid consumer gateway, a MaaS database replica. Tenants enter here. No models. | A MaaS hostname and certificate ([step 4](06-join-grid.md#1-add-the-sites-values)), a load balancer *(Unverified.)* |
+| `ingress` | OpenShift AI with MaaS, the Org UI, the grid consumer gateway, a MaaS database replica. Tenants enter here. No models. | A MaaS hostname and certificate ([join each site to the grid](06-join-grid.md#1-add-the-sites-values)), a load balancer *(Unverified.)* |
 | `inference` | OpenShift AI without MaaS, the grid provider gateway, the models. Reached only by ingress sites, over mTLS. | Capacity, GPUs for GPU models *(Unverified.)* |
 | `combined` | Both on one cluster. | Both |
 
@@ -26,7 +26,7 @@ The smallest grid is one combined site. A typical grid is one ingress site plus 
 ## 2. Add a break-glass admin
 
 If the site's only sign-in is an external identity provider, add the htpasswd admin, as on the hub
-([step 1](03-prepare-hub.md#1-add-a-break-glass-admin)):
+([prepare the hub](03-prepare-hub.md#1-add-a-break-glass-admin)):
 
 ```sh
 oc config use-context "$SITE_CONTEXT"
@@ -94,7 +94,7 @@ HUB_CONTEXT="$HUB_CONTEXT" bash ../library/docs/acm/cluster-onboarding/import-ma
 Read the summary, then run the same command with `--yes` added.
 
 The site joins ACM's `global` ClusterSet, and `argo-registration` registers it with the hub's Argo CD. Nothing AI Grid
-installs yet: that waits for the labels in step 4.
+installs yet: that waits for the labels you add when you [join it to the grid](06-join-grid.md).
 
 ## 6. Check the import
 

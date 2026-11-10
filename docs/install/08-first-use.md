@@ -14,7 +14,7 @@ in as an OpenShift user through the htpasswd provider and makes one call:
 
 ## 1. Sign in to the console
 
-1. Open `https://CONSOLE_HOST` (from [step 2](04-hub-components.md#3-verify)). OpenShift's sign-in page opens.
+1. Open `https://CONSOLE_HOST` (from [install the hub components](04-hub-components.md#3-verify)). OpenShift's sign-in page opens.
 2. Choose your identity provider, such as `htpasswd` for the break-glass admin, and sign in as a cluster admin.
 
    You should see the **AI Grid** page, with your user shown as `USER (provider admin)`. The navigation lists

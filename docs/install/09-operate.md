@@ -27,7 +27,7 @@ An upgrade is one commit to your deployment repository that moves the library pi
    You should see `0 not at NEW_SHA7`. On the tested hub, 28 library sources moved in about 6 minutes with no manual
    step.
 
-4. Rerun the checks from [step 4](06-join-grid.md#3-verify) and a tenant call from [first use](08-first-use.md#6-call-the-model-as-a-tenant).
+4. Rerun the checks from [join each site to the grid](06-join-grid.md#3-verify) and a tenant call from [first use](08-first-use.md#6-call-the-model-as-a-tenant).
 
 Before a pin that changes the Keycloak version, read
 [Keycloak](hub/04-tenant-identity.md#known-issues-1): Keycloak's import-then-start layout can't migrate
@@ -35,7 +35,8 @@ an older database.
 
 ## Add a site
 
-Follow [step 3](05-prepare-site.md) and [step 4](06-join-grid.md) for the new site.
+Follow [prepare each site and join it to ACM](05-prepare-site.md) and [join each site to the grid](06-join-grid.md) for
+the new site.
 
 ## Change a site's role
 
@@ -56,7 +57,7 @@ there. *(Unverified.)*
    later, with the site's models and subscriptions as before.
 2. To remove it from ACM too, delete the ManagedCluster, then any Argo CD cluster Secret and grid identity Secret
    (`redhat-ai-grid/grid-site-SITE`) left on the hub.
-3. To reuse the cluster, wipe it ([step 3, part 3](05-prepare-site.md#3-if-the-cluster-ran-ai-grid-before-wipe-it)).
+3. To reuse the cluster, wipe it ([prepare each site, part 3](05-prepare-site.md#3-if-the-cluster-ran-ai-grid-before-wipe-it)).
 
 ## Rotate credentials
 
@@ -68,7 +69,7 @@ there. *(Unverified.)*
 
 ## Uninstall
 
-The uninstall returns each cluster to how it was before [step 1](03-prepare-hub.md): OpenShift with your platform's
+The uninstall returns each cluster to how it was before you [prepared the hub](03-prepare-hub.md): OpenShift with your platform's
 own services, plus the break-glass admin. It removes everything the install put there, sites first, then the hub.
 
 ### What "before" means
@@ -138,7 +139,7 @@ Replace the following:
 - `HUB_KUBECONFIG`, `SITE_KUBECONFIG`: kubeconfig files with a `cluster-admin` session on each cluster.
 - `HUB_API_URL`, `SITE_API_URL`: each cluster's API URL, as `oc whoami --show-server` prints it.
 - `SITE`: the site's ManagedCluster name.
-- `ADMIN_PASSWORD_FILE`: the break-glass admin's password file ([step 1](03-prepare-hub.md#1-add-a-break-glass-admin)).
+- `ADMIN_PASSWORD_FILE`: the break-glass admin's password file ([prepare the hub](03-prepare-hub.md#1-add-a-break-glass-admin)).
   Use `--admin-user` if the user isn't `admin`, and `--site-admin-password-file` if the site's admin password differs
   from the hub's.
 

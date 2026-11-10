@@ -1,6 +1,6 @@
-# Step 2: install the hub components
+# Install the hub components
 
-Argo CD now installs the components you selected, from the library at your pinned commit. This step waits for them,
+Argo CD now installs the components you selected, from the library at your pinned commit. This page waits for them,
 creates the secrets that never go in git, and checks the result.
 
 ## 1. Watch the components install
@@ -13,7 +13,7 @@ Components start in sync-wave order: GitOps settings and cluster configuration, 
 databases, then grid bootstrap, policies and the console. On the tested hub, every Application was created within a
 few minutes and ACM's MultiClusterHub reached `Running` in about 20 minutes.
 
-Expected until the first site joins (step 4), and not a problem:
+Expected until the first site [joins the grid](06-join-grid.md), and not a problem:
 
 | Application | State | Why |
 |---|---|---|
@@ -34,7 +34,7 @@ You should see the MultiClusterHub with status `Running`.
 1. **Your tenant identity provider's objects,** if you bring your own: the client Secret and CA ConfigMap that your
    `idp*` inputs name, and anything your IdP's own apps need. See
    [tenant identity provider](hub/04-tenant-identity.md#tenant-identity-provider). Then rerun the `--expect-idp own` check from
-   [step 1](03-prepare-hub.md#2-check-the-infrastructure).
+   [prepare the hub](03-prepare-hub.md#2-check-the-infrastructure).
 
 2. **The provider console's secrets,** if you selected the console: the catalog token for the git writer, and the
    console's Keycloak admin credentials. The console needs a Keycloak tenant IdP with Organizations, with Route

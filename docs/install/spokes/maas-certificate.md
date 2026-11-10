@@ -28,7 +28,7 @@ You need a cert-manager ClusterIssuer on each ingress or combined site that issu
 3. Point the gateway's HTTPS listener at the Secret in `values/clusters/SITE/rhoai.yaml`. Helm replaces lists whole, so
    give both of the chart's listeners.
 
-The templates for all three are in [step 4, part 1](../06-join-grid.md#1-add-the-sites-values); the example deployment's
+The templates for all three are in [join each site to the grid, part 1](../06-join-grid.md#1-add-the-sites-values); the example deployment's
 versions are [`apps/site-b-maas-tls.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/apps/site-b-maas-tls.yaml),
 [`sites/site-b/maas-tls/certificate.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/sites/site-b/maas-tls/certificate.yaml)
 and [`values/clusters/site-b/rhoai.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/values/clusters/site-b/rhoai.yaml).

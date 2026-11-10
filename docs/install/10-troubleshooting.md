@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Each entry gives the symptom, the cause and the fix. Component pages list more under **Known issues**.
+Each entry gives the symptom, the cause and the fix. The [hub](hub/README.md) and [spokes](spokes/README.md) pages list more under **Known issues**.
 
 ## The root reports `missing input: NAME` or `invalid input: NAME`
 
@@ -14,7 +14,7 @@ Each entry gives the symptom, the cause and the fix. Component pages list more u
 
 **Cause:** an ingress or combined site has no `values/clusters/SITE/rhoai.yaml` with its MaaS hostname prefix.
 
-**Fix:** add it ([step 4, part 1](06-join-grid.md#1-add-the-sites-values)) and push.
+**Fix:** add it ([join each site to the grid, part 1](06-join-grid.md#1-add-the-sites-values)) and push.
 
 ## Organization create fails with Bad Request
 
@@ -29,7 +29,7 @@ Each entry gives the symptom, the cause and the fix. Component pages list more u
 **Cause:** the MaaS gateway presents its in-cluster service certificate on the public hostname.
 
 **Fix:** give the gateway a trusted certificate through the site's values file
-([step 4, part 1](06-join-grid.md#1-add-the-sites-values); [MaaS gateway certificate](spokes/maas-certificate.md)).
+([join each site to the grid, part 1](06-join-grid.md#1-add-the-sites-values); [MaaS gateway certificate](spokes/maas-certificate.md)).
 
 ## Every model call returns `403`, "access denied to requested subscription"
 
@@ -59,7 +59,7 @@ header for keys, by design. A key reaches exactly the models its subscription co
 gets `403` for any other model. A revoked key also gets `403`, not `401`.
 
 **Fix:** to limit what a key reaches, create it under a subscription that covers only those models
-([first use, step 5](08-first-use.md#6-call-the-model-as-a-tenant)). For a `403`, check the key's `subscription` and
+([first use, part 6](08-first-use.md#6-call-the-model-as-a-tenant)). For a `403`, check the key's `subscription` and
 `status` with `GET https://MAAS_HOST/v1/api-keys/KEY_ID`.
 
 ## The Org UI can't load models or API keys
@@ -76,7 +76,7 @@ tenant's token only as `x-forwarded-id-token`, and the portal reads `x-forwarded
 **Fix:** pin FBC `d0ee30a` or later, such as the library's `add544e`;
 ai-gateway-controller [PR 246](https://github.com/opendatahub-io/ai-gateway-controller/pull/246) restores the header.
 Until then, tenants create API keys through the MaaS API
-([first use, step 5](08-first-use.md#6-call-the-model-as-a-tenant)). Don't edit the AuthPolicy or the `maas-portal`
+([first use, part 6](08-first-use.md#6-call-the-model-as-a-tenant)). Don't edit the AuthPolicy or the `maas-portal`
 Deployment by hand: their controllers revert the change.
 
 ## Calls fail with `401` or `503` after the IdP was down
@@ -140,4 +140,4 @@ it.
 
 **Cause:** they wait for the first site to join.
 
-**Fix:** none needed before step 4. After a site joins, check the site's Submariner gateways ([Submariner](hub/01-acm.md#submariner)).
+**Fix:** none needed before the first site joins the grid. After a site joins, check the site's Submariner gateways ([Submariner](hub/01-acm.md#submariner)).

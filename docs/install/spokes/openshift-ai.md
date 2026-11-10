@@ -125,7 +125,7 @@ with no manual step; the `ai-grid/library-revision` label shows when each site h
 **Symptom:** a site's `rhoai-*` Application fails to render with
 `...ai-grid/maas-gateway-hostname-prefix is required`.
 **Cause:** the site is ingress or combined and has no `values/clusters/SITE/rhoai.yaml` with the hostname prefix.
-**Workaround:** add the file (step 2) and push it; the Application renders on its next refresh.
+**Workaround:** add the file (step 2 of [Use ours](#use-ours)) and push it; the Application renders on its next refresh.
 
 MaaS gateway certificate errors and the cleartext port 80 listener are on the
 [MaaS gateway certificate](maas-certificate.md#known-issues) page.

@@ -43,7 +43,7 @@ Exact CPU and memory sizing for a hub isn't established yet ([known gaps](append
 DNS:
 
 - Each ingress site's MaaS hostname, `PREFIX.apps.CLUSTER_DOMAIN`, resolves to the MaaS gateway's load balancer.
-  OpenShift creates this record; you choose `PREFIX` in [step 4](06-join-grid.md).
+  OpenShift creates this record; you choose `PREFIX` when you [join each site to the grid](06-join-grid.md).
 - Every router name answers `AAAA` queries with an address or an empty answer, never `NXDOMAIN`. Check with
   `dig AAAA router-default.apps.CLUSTER_DOMAIN`. An `NXDOMAIN` answer leaves every GridSite `Connecting`.
 
@@ -51,17 +51,17 @@ DNS:
 
 | What | Used in | Notes |
 |---|---|---|
-| A `quay.io/rhoai` login, and a `registry.stage.redhat.io` login, in a container auth file (pre-release access, see the preceding note) | [Step 1](03-prepare-hub.md) | Prefer a robot token scoped to `quay.io/rhoai`. A general `quay.io` login is copied to every site, so the bootstrap script refuses it unless you set `RHOAI_QUAY_ALLOW_GENERIC_LOGIN=1`. |
+| A `quay.io/rhoai` login, and a `registry.stage.redhat.io` login, in a container auth file (pre-release access, see the preceding note) | [Prepare the hub](03-prepare-hub.md) | Prefer a robot token scoped to `quay.io/rhoai`. A general `quay.io` login is copied to every site, so the bootstrap script refuses it unless you set `RHOAI_QUAY_ALLOW_GENERIC_LOGIN=1`. |
 | A git host the hub can read | [Repositories](02-repositories.md) | The example uses public GitHub repositories. |
-| A token that can write only the catalog repository | [Step 2](04-hub-components.md) | A GitHub fine-grained token with `contents: write` on that one repository. The console's git writer uses it. |
+| A token that can write only the catalog repository | [Install the hub components](04-hub-components.md) | A GitHub fine-grained token with `contents: write` on that one repository. The console's git writer uses it. |
 | A tenant identity provider | [Repositories](02-repositories.md), [tenant identity provider](hub/04-tenant-identity.md#tenant-identity-provider) | An OIDC issuer, a confidential client, and Keycloak Organizations if you use the console to create organizations. |
-| A cert-manager ClusterIssuer that can issue publicly trusted certificates by **DNS-01** on every ingress or combined site, or your own certificate for each site's MaaS hostname | [Step 4](06-join-grid.md#1-add-the-sites-values), [MaaS gateway certificate](spokes/maas-certificate.md) | The MaaS gateway's load balancer serves its hostname directly, so HTTP-01 can't solve, and without a trusted certificate tenants get a certificate error. |
-| `cluster-admin` on every cluster | All steps | |
+| A cert-manager ClusterIssuer that can issue publicly trusted certificates by **DNS-01** on every ingress or combined site, or your own certificate for each site's MaaS hostname | [Join each site to the grid](06-join-grid.md#1-add-the-sites-values), [MaaS gateway certificate](spokes/maas-certificate.md) | The MaaS gateway's load balancer serves its hostname directly, so HTTP-01 can't solve, and without a trusted certificate tenants get a certificate error. |
+| `cluster-admin` on every cluster | Every page | |
 
 ## 4. Tools on your workstation
 
 `oc`, `kubectl`, `kustomize` (5.x), `jq`, `git`, `curl`, `openssl`, `base64`, `python3` with PyYAML, `htpasswd`
-(from `httpd-tools`) and `clusteradm` (for the import in [step 3](05-prepare-site.md)).
+(from `httpd-tools`) and `clusteradm` (for the import when you [prepare each site](05-prepare-site.md)).
 
 Check them:
 

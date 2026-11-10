@@ -1,8 +1,8 @@
-# Step 4: join each site to the grid
+# Join each site to the grid
 
 Labels on the site's ManagedCluster make it a grid site in its role. The hub then installs OpenShift AI, MaaS (on
 ingress and combined sites), the grid, and the tenant settings. Use the shell variables from
-[step 3](05-prepare-site.md).
+[prepare each site](05-prepare-site.md).
 
 ## 1. Add the site's values
 

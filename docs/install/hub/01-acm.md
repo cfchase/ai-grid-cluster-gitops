@@ -195,7 +195,7 @@ The add-on's settings move with the library pin; the Submariner version follows 
 - **Symptom:** No `submariner.io/gateway=true` node on a compact cluster or single-node OpenShift, and the gateway
   never connects.
   **Cause:** The `submariner-gateway-nodes` Policy labels only nodes whose only role is `worker`.
-  **Workaround:** Label the gateway nodes by hand, as in step 1.
+  **Workaround:** Label the gateway nodes by hand, as in the first step of [Use ours](#use-ours-1).
 
 ## Object storage
 

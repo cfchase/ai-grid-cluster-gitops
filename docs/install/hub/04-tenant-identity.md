@@ -172,7 +172,7 @@ The verified install brought its own IdP instead, so every step in this section 
 4. After the console's Route exists, run `apps/console/create-secrets.sh` from the library checkout. Its defaults,
    `KEYCLOAK_NAMESPACE=maas-db` and `KEYCLOAK_REALM=saas`, are this Keycloak's.
 
-Use MaaS hostname prefix `maas` on every ingress or combined site ([step 4](../06-join-grid.md#1-add-the-sites-values)):
+Use MaaS hostname prefix `maas` on every ingress or combined site ([join each site to the grid](../06-join-grid.md#1-add-the-sites-values)):
 a CronJob keeps `tenant-demo`'s redirect URIs equal to `https://maas.<apps domain>/oauth2/callback` for every ingress or
 combined site. Realms are imported on first start only; later edits to `saas-realm.json` reach the realm through
 PostSync hooks. Details: [`apps/keycloak/README.md`](../../../apps/keycloak/README.md).

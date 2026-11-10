@@ -1,6 +1,6 @@
-# Step 1: prepare the hub
+# Prepare the hub
 
-In this step you check the hub's infrastructure, install OpenShift GitOps, and apply your root. From then on, Argo CD
+On this page you check the hub's infrastructure, install OpenShift GitOps, and apply your root. From then on, Argo CD
 installs everything from git.
 
 Set the hub's context once in your shell for this section:
@@ -61,7 +61,7 @@ You should see the script confirm the sign-in. Sign in once in the web console a
    | default StorageClass | Annotate one StorageClass `storageclass.kubernetes.io/is-default-class=true`. |
    | cert-manager CRDs | Install the cert-manager Operator for Red Hat OpenShift, or select `apps/cert-manager` ([cert-manager](hub/00-platform-services.md#cert-manager)). |
    | quay.io/rhoai pull secret file | Log in: `podman login quay.io` with a `quay.io/rhoai` robot token ([OpenShift AI prerequisites](hub/06-site-delivery.md#registry-access-and-openshift-ai-prerequisites)). |
-   | object storage | Expected here if you selected `apps/object-storage/s4` or `odf`: it appears in step 2. If you bring your own, create the Secret now ([object storage](hub/01-acm.md#object-storage)). |
+   | object storage | Expected here if you selected `apps/object-storage/s4` or `odf`: it appears when you [install the hub components](04-hub-components.md). If you bring your own, create the Secret now ([object storage](hub/01-acm.md#object-storage)). |
 
 4. If you bring your own tenant identity provider, check its two hub objects as well:
 
@@ -72,7 +72,7 @@ You should see the script confirm the sign-in. Sign in once in the web console a
 
    Replace the placeholders with your `idpClientSecret*` and `idpCA*` inputs. You should see `OK` on the
    `IdP client secret` and `IdP CA` lines. If your IdP runs on the hub from your own apps (as the example's does),
-   these appear only after step 2; run this check again then.
+   these appear only after you install the hub components; run this check again then.
 
 ## 3. Install OpenShift GitOps and apply your root
 
@@ -96,7 +96,7 @@ If the file holds only a general `quay.io` login, the script stops: that login w
 robot token for `quay.io/rhoai`, or accept the risk with `RHOAI_QUAY_ALLOW_GENERIC_LOGIN=1`.
 
 You should see `Bootstrapped.` at the end. The script runs the prerequisites check first and reports what's missing;
-the items that this script and step 2 install are expected to be missing.
+the items that this script and the hub components install are expected to be missing.
 
 ## 4. Check that Argo CD follows your repository
 
