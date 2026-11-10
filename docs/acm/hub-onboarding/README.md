@@ -4,14 +4,7 @@ How a cluster becomes a Grid site on v0.3.0-rc.3, under Local membership with AC
 
 ## Installing Argo CD
 
-Argo CD runs on the hub and installs everything else from the tenant repo, ACM included. Argo syncs from git, so run it from your own fork. Point the fork's Argo sources at itself, once, and push:
-
-```bash
-git clone https://github.com/<you>/ai-grid-tenant.git
-cd ai-grid-tenant
-scripts/set-tenant-repo.sh https://github.com/<you>/ai-grid-tenant.git main
-git commit -am "Point Argo at this fork" && git push
-```
+Argo CD runs on the hub and installs everything else from this repository, ACM included. Components never name this repository or a branch: every self-reference is the input `@libraryRepoURL@` at `@libraryRevision@`, which the root ApplicationSet replaces from its generator values. Set those two values to the repository and commit the hub should run.
 
 Then, as cluster-admin on the hub:
 

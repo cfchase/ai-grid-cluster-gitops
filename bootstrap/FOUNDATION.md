@@ -15,7 +15,10 @@ rest of the stack.
 2. Confirm the `redhat-operators` CatalogSource is Ready and offers the
    `openshift-gitops-operator` `latest` and
    `advanced-cluster-management` `release-2.17` channels.
-3. Review `foundation-acm-application.yaml`. Its directory include selects
+3. Review `foundation-acm-application.yaml`. Its source is the inputs
+   `@libraryRepoURL@` and `@libraryRevision@`: replace both with this
+   repository's URL and the commit to install before applying it.
+   Its directory include selects
    only the ACM OperatorGroup, Subscription, and MultiClusterHub from Git.
    It uses the Application name `acm`, so the full root ApplicationSet can
    later take over that same Application deliberately.

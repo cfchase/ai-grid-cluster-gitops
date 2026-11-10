@@ -23,8 +23,8 @@ values. Use documented, parameterized scripts for unavoidable runtime inputs.
 ```sh
 helm lint cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
 helm template cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
-bash -n bootstrap.sh docs/acm/cluster-onboarding/import-managed-cluster.sh scripts/set-tenant-repo.sh
-scripts/set-tenant-repo.sh --check
+bash -n bootstrap.sh docs/acm/cluster-onboarding/import-managed-cluster.sh
+bash tests/library/inputs-test.sh
 ```
 
 Use `helm template` to inspect rendered resources. These checks do not touch a cluster. Do not run `./bootstrap.sh`,
