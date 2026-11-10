@@ -28,7 +28,8 @@ same `values`, because the `templatePatch` reads them for every Application.
 Components write an input as `@<name>@`. The `templatePatch` replaces each one
 from the generator's `values`. When an Application still holds `@<name>@` or a
 `REQUIRED-<name>` value, the ApplicationSet reports `missing input: <name>` and
-creates no Application. Values must not contain `"`, `\`, `'` or `@`.
+creates no Application. A value must be non-empty and must not contain `"`,
+`\`, `'` or `@`; otherwise the ApplicationSet reports `invalid input: <name>`.
 
 | Input | Meaning |
 |---|---|

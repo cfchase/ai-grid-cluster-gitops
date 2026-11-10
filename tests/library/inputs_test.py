@@ -436,6 +436,15 @@ def root_render(inputs):
         _, error = render_patch(renderer, appset, root_params("apps/acm/application.yaml", values))
         if not error or "missing input: libraryRevision" not in error:
             fail("an input %s must fail with 'missing input: libraryRevision', got %r" % (name, error))
+    # A value that's empty, or that would break the JSON or YAML it's replaced
+    # into, fails naming the input, for every component (here acm, which
+    # doesn't even use idpClientID).
+    for label, value in (("empty", ""), ("a double quote", 'a"b'), ("a single quote", "a'b"),
+                         ("a backslash", "a\\b"), ("an at sign", "a@b")):
+        _, error = render_patch(renderer, appset,
+                                root_params("apps/acm/application.yaml", dict(inputs, idpClientID=value)))
+        if not error or "invalid input: idpClientID" not in error:
+            fail("an input with %s must fail with 'invalid input: idpClientID', got %r" % (label, error))
 
 
 def load(path):
