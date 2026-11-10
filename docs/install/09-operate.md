@@ -68,5 +68,119 @@ there. *(Unverified.)*
 
 ## Uninstall
 
-Not designed yet ([known gaps](appendix-c-gaps.md)). Removing `deployment-root` or the root ApplicationSet doesn't
-remove components: both are set to keep resources when deleted.
+The uninstall returns each cluster to how it was before [step 1](03-prepare-hub.md): OpenShift with your platform's
+own services, plus the break-glass admin. It removes everything the install put there, sites first, then the hub.
+
+### What "before" means
+
+| Cluster | After the uninstall | Removed |
+|---|---|---|
+| Hub | OpenShift; the platform's identity provider, cert-manager and certificate issuers; the htpasswd admin | OpenShift GitOps, ACM and the multicluster engine, every component and your own apps, their operators and namespaces |
+| Site | OpenShift; the platform's identity provider, cert-manager, NFD and GPU operator; the htpasswd admin | OpenShift AI, MaaS, the grid, Submariner, the ACM agent, everything the hub's Applications applied, their operators and namespaces |
+
+Left on purpose, on every cluster:
+
+- **CustomResourceDefinitions.** A reinstall reuses them; deleting a CRD deletes every object of its kind, including
+  ones your platform owns.
+- **The cluster pull secret's `quay.io/rhoai` and stage entries, and the image mirror.** A reinstall delivers the same
+  again, and removing a mirror drains every node. Remove them by hand if you won't reinstall.
+- **The protected namespaces and operators:** `keycloak`, `cert-manager`, `cert-manager-operator`,
+  `openshift-cert-manager-operator`, `openshift-nfd`, `nvidia-gpu-operator`, `openshift-config`,
+  `openshift-authentication`, and the packages `rhbk-operator`, `openshift-cert-manager-operator`, `nfd`,
+  `gpu-operator-certified`. Add your platform's own with `WIPE_PROTECT_NAMESPACES` and `WIPE_PROTECT_PACKAGES`
+  (space-separated). ClusterIssuers and the OAuth configuration are never touched.
+- **Your deployment and catalog repositories,** except that you empty the catalog (part 1).
+
+The uninstall reads what to delete from Argo CD's own record of what it applied (each Application's
+`status.resources`), so your own apps in `apps/*.yaml` go too. Operators then remove what they created, because their
+custom resources are deleted while they still run.
+
+### 1. Empty the catalog
+
+So a reinstall starts with no models or subscriptions, remove them from your catalog repository. With the console,
+delete each subscription, then each model ([first use, part 7](08-first-use.md#7-delete-what-you-created-optional)).
+Or in git:
+
+```sh
+git clone CATALOG_REPO_URL catalog && cd catalog
+git rm -r -q -- $(git ls-files | grep -vx README.md)
+git commit -m "catalog: empty for uninstall" && git push origin HEAD:main && cd ..
+```
+
+Wait until the models are gone from the sites, about 9 minutes
+([troubleshooting](10-troubleshooting.md#a-deleted-model-stays-on-the-site-for-several-minutes)). The site step
+deletes any that remain, while KServe still runs.
+
+### 2. Preview each step
+
+Each step needs the hub's and the site's kubeconfig, their API URLs, and the break-glass admin's password file. The
+script refuses a cluster whose API URL doesn't match, and refuses unless the admin signs in with the password and keeps
+`cluster-admin` through a binding the uninstall doesn't delete.
+
+```sh
+../library/scripts/uninstall.sh --step site --dry-run \
+  --hub-kubeconfig HUB_KUBECONFIG --expect-hub-api HUB_API_URL \
+  --site SITE --site-kubeconfig SITE_KUBECONFIG --expect-site-api SITE_API_URL \
+  --admin-password-file ADMIN_PASSWORD_FILE
+```
+
+Replace the following:
+
+- `HUB_KUBECONFIG`, `SITE_KUBECONFIG`: kubeconfig files with a `cluster-admin` session on each cluster.
+- `HUB_API_URL`, `SITE_API_URL`: each cluster's API URL, as `oc whoami --show-server` prints it.
+- `SITE`: the site's ManagedCluster name.
+- `ADMIN_PASSWORD_FILE`: the break-glass admin's password file ([step 1](03-prepare-hub.md#1-add-a-break-glass-admin)).
+  Use `--admin-user` if the user isn't `admin`. The same file must sign in on the hub and on the site.
+
+The output lists every step and every object it would delete, in order, and the objects it keeps because they're
+protected. Read it: nothing protected may be in the delete list. Preview the hub the same way with `--step hub` and
+only the hub's flags; until every site is uninstalled, its preview warns that sites are still managed.
+
+### 3. Uninstall each site
+
+Run the site command without `--dry-run`, for each site. It:
+
+1. Removes the site's `ai-grid/enabled` and `ai-grid/role` labels and waits for its Applications to go.
+2. Detaches the site from ACM, and deletes the Argo CD cluster Secret and grid identity the detach leaves on the hub.
+3. Deletes from the site, in order: models while KServe runs; MaaS objects, including `MaaSTenantConfig` and
+   `AITenant`, before the DataScienceCluster; the DataScienceCluster and its components; the grid's `GridNetwork` and
+   `GridSite`; the AI Grid gateways and their EnvoyFilters; the operators; their leftover webhooks; their namespaces.
+4. Deletes everything else the hub's Applications had applied to the site, and the ACM agent's namespaces.
+5. Signs in as the break-glass admin again.
+
+A site takes about 20 to 40 minutes. *(Unverified.)*
+
+### 4. Uninstall the hub
+
+```sh
+../library/scripts/uninstall.sh --step hub \
+  --hub-kubeconfig HUB_KUBECONFIG --expect-hub-api HUB_API_URL --admin-password-file ADMIN_PASSWORD_FILE
+```
+
+It refuses while any site is still managed. It:
+
+1. Stops Argo CD: deletes the ApplicationSets without cascading, then removes each Application's finalizer and
+   deletes it. Deleting the root alone would delete nothing, because the root keeps resources when it's removed.
+2. Deletes, in order: the hub's ACM Policies and Placements; custom resources while their operators run (databases,
+   ExternalSecrets, S4); MultiClusterObservability, then MultiClusterHub, then the multicluster engine; other objects;
+   cluster-scoped objects; operator subscriptions with their CSVs; namespaces.
+3. Deletes ACM's documented leftovers (admission APIServices and webhooks) and OpenShift GitOps last.
+4. Signs in as the break-glass admin again.
+
+A hub takes about 30 to 60 minutes; MultiClusterHub alone can take 20. *(Unverified.)*
+
+### 5. Check
+
+On each cluster:
+
+```sh
+oc get applications.argoproj.io -A 2>&1 | head -1
+oc get ns | grep -E 'open-cluster-management|multicluster-engine|redhat-ods|redhat-ai-grid|maas|ai-grid|gitops|kuadrant'
+oc get oauth cluster -o jsonpath='{.spec.identityProviders[*].name}{"\n"}'
+```
+
+You should see that the Argo CD Application kind doesn't exist (`the server doesn't have a resource type`), no
+namespace from the list, and your platform's identity providers plus `htpasswd`. Sign in once in the web console as the
+break-glass admin.
+
+To reinstall, start again at [section 2](02-repositories.md) with the same or new repositories.
