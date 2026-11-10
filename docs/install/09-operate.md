@@ -146,8 +146,11 @@ Run the site command without `--dry-run`, for each site. It:
 3. Deletes from the site, in order: models while KServe runs; MaaS objects, including `MaaSTenantConfig` and
    `AITenant`, before the DataScienceCluster; the DataScienceCluster and its components; the grid's `GridNetwork` and
    `GridSite`; the AI Grid gateways and their EnvoyFilters; the operators; their leftover webhooks; their namespaces.
-4. Deletes everything else the hub's Applications had applied to the site, and the ACM agent's namespaces.
-5. Signs in as the break-glass admin again.
+4. Deletes everything else the hub's Applications had applied to the site.
+5. Deletes the ACM `Klusterlet`, then the namespaces that Argo CD's inventory doesn't list: the ACM agent's and
+   policy namespaces, the site's own policy namespace, Submariner's, and the operator-created `ai-tenants` and
+   `redhat-ai-gateway-infra`, each only if it's still there.
+6. Signs in as the break-glass admin again.
 
 A site takes about 20 to 40 minutes. *(Unverified.)*
 
@@ -165,8 +168,11 @@ It refuses while any site is still managed. It:
 2. Deletes, in order: the hub's ACM Policies and Placements; custom resources while their operators run (databases,
    ExternalSecrets, S4); MultiClusterObservability, then MultiClusterHub, then the multicluster engine; other objects;
    cluster-scoped objects; operator subscriptions with their CSVs; namespaces.
-3. Deletes ACM's documented leftovers (admission APIServices and webhooks) and OpenShift GitOps last.
-4. Signs in as the break-glass admin again.
+3. Deletes ACM's documented leftovers (admission APIServices and webhooks), then the namespaces that ACM's add-ons,
+   the multicluster engine and the operators leave outside Argo CD's inventory, such as `default-broker`,
+   `submariner-operator`, `external-secrets`, `hive` and `local-cluster`, each only if it's still there.
+4. Deletes OpenShift GitOps last.
+5. Signs in as the break-glass admin again.
 
 A hub takes about 30 to 60 minutes; MultiClusterHub alone can take 20. *(Unverified.)*
 

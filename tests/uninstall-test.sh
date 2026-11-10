@@ -28,6 +28,8 @@ case "$*" in
   "get managedcluster local-cluster -o jsonpath="*) echo "" ;;
   "get managedcluster site-b") [ -s "$w.managed" ] && grep -qx site-b "$w.managed" ;;
   "get klusterlet klusterlet -o jsonpath="*) cat "$w.klusterlet" 2>/dev/null ;;
+  "get klusterlet klusterlet") [ -s "$w.klusterlet" ] ;;
+  get\ ns\ *) grep -qx "$3" "$w.ns" 2>/dev/null ;;
   get\ applicationsets.argoproj.io*) echo "applicationset.argoproj.io/apps" ;;
   get\ applications.argoproj.io\ -n\ openshift-gitops\ -o\ name) echo "application.argoproj.io/acm" ;;
   get\ secrets*) echo '{"items":[]}' ;;
@@ -52,7 +54,7 @@ world() { # hub and site clusters that pass every check
   done
   echo site-b > "$T/hub.kc.managed"; echo site-b > "$T/site.kc.klusterlet"; echo yes > "$T/can-i"
 }
-run() { env -i PATH="$T/bin:/usr/bin:/bin" HOME="$T" STUB="$T" bash scripts/uninstall.sh "$@" 2>&1; }
+run() { env -i PATH="$T/bin:/usr/bin:/bin" HOME="$T" STUB="$T" WIPE_PROTECT_NAMESPACES="${WPN:-}" bash scripts/uninstall.sh "$@" 2>&1; }
 HUB=(--hub-kubeconfig "$T/hub.kc" --expect-hub-api https://api.hub.example.com:6443 --admin-password-file "$T/pw")
 SITE=(--site site-b --site-kubeconfig "$T/site.kc" --expect-site-api https://api.site.example.com:6443)
 t() { # name want_rc expect_grep args...
@@ -81,4 +83,13 @@ world; t "a cluster-scoped object is deleted without a namespace" 0 "would delet
 world; t "a namespaced object is deleted in its namespace" 0 "would delete: Cluster.v1.postgresql.cnpg.io maas-db -n maas-db" --step hub --dry-run "${HUB[@]}"
 world; echo hunter2-test > "$T/site-pw"; echo wrong > "$T/pw-hub-only"
 t "the site's own password file is used for the site" 1 "site-b: admin can't sign in" --step site --dry-run --hub-kubeconfig "$T/hub.kc" --expect-hub-api https://api.hub.example.com:6443 --admin-password-file "$T/pw" --site-admin-password-file "$T/pw-hub-only" "${SITE[@]}"
+world; printf 'ai-tenants\nopen-cluster-management\n' > "$T/site.kc.ns"; out=$(run --step site --dry-run "${HUB[@]}" "${SITE[@]}"); total=$((total+1))
+k=$(grep -n "would delete: klusterlet klusterlet" <<<"$out" | cut -d: -f1); n=$(grep -n "would delete: ns open-cluster-management\$" <<<"$out" | cut -d: -f1)
+if [ -n "$k" ] && [ -n "$n" ] && [ "$k" -lt "$n" ]; then echo "   ok   the site's leftover namespaces are swept, after its Klusterlet"
+else fails=$((fails+1)); echo "   FAIL the site's leftover namespaces are swept, after its Klusterlet"; fi
+world; printf 'ai-tenants\n' > "$T/site.kc.ns"; out=$(run --step site --dry-run "${HUB[@]}" "${SITE[@]}"); total=$((total+1))
+if grep -q "would delete: ns ai-tenants" <<<"$out" && ! grep -q "would delete: ns redhat-ai-gateway-infra" <<<"$out"; then echo "   ok   only leftover namespaces that exist are swept"
+else fails=$((fails+1)); echo "   FAIL only leftover namespaces that exist are swept"; fi
+world; printf 'ai-tenants\n' > "$T/site.kc.ns"; WPN=ai-tenants t "a deployment's protected namespace isn't swept" 0 "kept \(protected namespace\): ai-tenants" --step site --dry-run "${HUB[@]}" "${SITE[@]}"
+world; printf 'default-broker\n' > "$T/hub.kc.ns"; t "the hub's leftover namespaces are swept" 0 "would delete: ns default-broker" --step hub --dry-run "${HUB[@]}"
 echo "uninstall tests: $((total-fails)) ok, $fails failed"; exit "$fails"

@@ -32,5 +32,6 @@
  {"metadata": {"name": "argo-children"},
   "spec": {"destination": {"server": "https://kubernetes.default.svc", "namespace": "openshift-gitops"}},
   "status": {"resources": [
-    {"group": "argoproj.io", "version": "v1alpha1", "kind": "ApplicationSet", "namespace": "openshift-gitops", "name": "nested"}]}}
+    {"group": "argoproj.io", "version": "v1alpha1", "kind": "ApplicationSet", "namespace": "openshift-gitops", "name": "nested"},
+    {"group": "argoproj.io", "version": "v1beta1", "kind": "ArgoCD", "namespace": "openshift-gitops", "name": "openshift-gitops"}]}}
 ]}
