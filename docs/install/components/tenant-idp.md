@@ -8,7 +8,7 @@ provider console also creates organizations in it, which requires Keycloak with 
 |---|---|
 | Runs on | hub, or the cluster labelled `ai-grid/external-services=true`, or anywhere you run your own IdP |
 | Library component | `apps/keycloak` (hub) or `apps/keycloak-external-services`; or none: your own IdP |
-| Choices | Use ours · Bring your own (the verified path) |
+| Choices | Use ours · Bring your own, any OIDC provider (the verified path). The [provider console](./console.md) needs Keycloak. |
 
 Whichever you choose, the 8 `idp*` inputs connect it to AI Grid ([Inputs](../appendix-a-inputs.md)). The library reads
 nothing else about your IdP.
@@ -27,12 +27,14 @@ instead, so every step in this section is *(Unverified.)*
    - path: apps/keycloak/application.yaml
    ```
 
-   To run it on the cluster that holds MaaS's shared state instead, select `apps/external-services/application.yaml`
-   and `apps/keycloak-external-services/application.yaml`, and label that cluster `ai-grid/external-services=true`.
+   This page covers Keycloak on the hub only. `apps/keycloak-external-services` runs it on a site labelled
+   `ai-grid/external-services=true` instead, but the tenant Policy reads the client Secret and the CA from the **hub**,
+   so that layout also needs both copied to the hub, and the CA is that site's, not the hub's. It isn't covered here.
 2. Know what the default profile installs: `apps/keycloak/application.yaml` uses `overlays/default`, which adds two
    example tenant realms with test users. For anything but a test, use `overlays/core` (only the `saas` realm). The
    root reads the library's `application.yaml` as is, so leave `apps/keycloak` out of `files` and add your own
-   Application in your deployment's `apps/` with `repoURL: '@libraryRepoURL@'`, `targetRevision: '@libraryRevision@'`
+   Application in your deployment's `apps/` (read by your root's own-apps generator,
+   [section 2](../02-repositories.md#3-select-components)) with `repoURL: '@libraryRepoURL@'`, `targetRevision: '@libraryRevision@'`
    and `path: apps/keycloak/overlays/core`, otherwise matching the library's.
 3. Set the `idp*` inputs in your root's generator `values`:
 
@@ -52,7 +54,8 @@ instead, so every step in this section is *(Unverified.)*
 4. After the console's Route exists, run `apps/console/create-secrets.sh` from the library checkout. Its defaults,
    `KEYCLOAK_NAMESPACE=maas-db` and `KEYCLOAK_REALM=saas`, are this Keycloak's.
 
-A CronJob keeps `tenant-demo`'s redirect URIs equal to `https://maas.<apps domain>/oauth2/callback` for every ingress or
+Use MaaS hostname prefix `maas` on every ingress or combined site ([step 4](../06-join-grid.md#1-add-the-sites-values)):
+a CronJob keeps `tenant-demo`'s redirect URIs equal to `https://maas.<apps domain>/oauth2/callback` for every ingress or
 combined site. Realms are imported on first start only; later edits to `saas-realm.json` reach the realm through
 PostSync hooks. Details: [`apps/keycloak/README.md`](../../../apps/keycloak/README.md).
 

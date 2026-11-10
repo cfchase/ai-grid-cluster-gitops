@@ -23,20 +23,109 @@ file.
    ```
 
 2. Give the MaaS gateway a certificate tenants trust. The gateway otherwise presents its in-cluster service
-   certificate on the public hostname, and a router Route can't help because OpenShift points the hostname straight at
-   the gateway's own load balancer. On the tested site:
+   certificate on the public hostname, and a router Route can't help, because OpenShift points the hostname straight
+   at the gateway's own load balancer. For the same reason an HTTP-01 issuer can't solve; you need a DNS-01
+   ClusterIssuer on the site ([before you start](01-before-you-start.md#3-accounts-and-credentials)). The library
+   has no input for this certificate yet ([known gaps](appendix-c-gaps.md)), so you add it as your own app.
 
-   1. A cert-manager `Certificate` for `PREFIX.apps.CLUSTER_DOMAIN` in `openshift-ingress`, from a DNS-01
-      ClusterIssuer, delivered by an app in the deployment repository
-      ([`sites/site-b/maas-tls/certificate.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/sites/site-b/maas-tls/certificate.yaml)
-      and [`apps/site-b-maas-tls.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/apps/site-b-maas-tls.yaml)).
-   2. The gateway's listeners overridden in the same values file, with the HTTPS listener's `certificateRefs` naming
-      that Certificate's Secret
-      ([`values/clusters/site-b/rhoai.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/values/clusters/site-b/rhoai.yaml)).
-      Helm replaces lists whole, so copy both listeners.
+   1. Add the Certificate to your deployment repository, as `sites/SITE/maas-tls/certificate.yaml`:
 
-   An HTTP-01 issuer can't solve for this hostname. The library has no input for this certificate yet
-   ([known gaps](appendix-c-gaps.md)).
+      ```yaml
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      metadata:
+        name: maas-gateway-public
+        namespace: openshift-ingress
+      spec:
+        secretName: maas-gateway-public-tls
+        dnsNames:
+          - PREFIX.apps.CLUSTER_DOMAIN
+        issuerRef:
+          kind: ClusterIssuer
+          name: DNS01_ISSUER
+      ```
+
+   2. Add an Application that delivers it to the site, as `apps/SITE-maas-tls.yaml`. Your root's own-apps generator
+      picks it up. The hub's Argo CD reaches each site through ACM's cluster proxy, at
+      `https://cluster-proxy-addon-user.multicluster-engine.svc.cluster.local:9092/SITE`:
+
+      ```yaml
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: SITE-maas-tls
+        namespace: openshift-gitops
+      spec:
+        project: default
+        source:
+          repoURL: '@deploymentRepoURL@'
+          targetRevision: '@deploymentRevision@'
+          path: sites/SITE/maas-tls
+        destination:
+          server: https://cluster-proxy-addon-user.multicluster-engine.svc.cluster.local:9092/SITE
+          namespace: openshift-ingress
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+      ```
+
+   3. Point the gateway's HTTPS listener at the Certificate's Secret, in the same `values/clusters/SITE/rhoai.yaml`.
+      Helm replaces lists whole, so give both of the chart's listeners:
+
+      ```yaml
+      components:
+        aigateway:
+          modelsAsAService:
+            gateway:
+              annotations:
+                ai-grid/maas-gateway-hostname-prefix: PREFIX
+              spec:
+                listeners:
+                  - name: http
+                    port: 80
+                    protocol: HTTP
+                    allowedRoutes:
+                      namespaces:
+                        from: Selector
+                        selector:
+                          matchExpressions:
+                            - key: kubernetes.io/metadata.name
+                              operator: In
+                              values: [openshift-ingress, models-as-a-service, redhat-ai-gateway-infra]
+                  - name: https
+                    port: 443
+                    protocol: HTTPS
+                    allowedRoutes:
+                      namespaces:
+                        from: Selector
+                        selector:
+                          matchExpressions:
+                            - key: kubernetes.io/metadata.name
+                              operator: In
+                              values: [openshift-ingress, models-as-a-service, redhat-ai-gateway-infra]
+                    tls:
+                      mode: Terminate
+                      certificateRefs:
+                        - group: ""
+                          kind: Secret
+                          name: maas-gateway-public-tls
+      ```
+
+   Replace the following:
+
+   - `SITE`: the site's ACM cluster name.
+   - `PREFIX`: the MaaS hostname prefix from the previous step. With the library's Keycloak, use `maas`
+     ([tenant identity provider](components/tenant-idp.md)).
+   - `CLUSTER_DOMAIN`: the site's cluster domain, so the name matches `oc get ingresses.config.openshift.io cluster
+     -o jsonpath='{.spec.domain}'` with `PREFIX.` in front of it.
+   - `DNS01_ISSUER`: your DNS-01 ClusterIssuer on the site.
+
+   If you bring your own certificate instead, create Secret `openshift-ingress/maas-gateway-public-tls`
+   (`kubernetes.io/tls`) on the site and skip the Certificate and its Application.
+
+   Check, after the site is labelled: `oc --context "$SITE_CONTEXT" get certificate maas-gateway-public -n
+   openshift-ingress` shows `READY` `True`.
 
 3. Commit and push.
 

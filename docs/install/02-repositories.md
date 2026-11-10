@@ -61,6 +61,11 @@ The root takes the library's `bootstrap/hub` at one commit. Every component then
 
 ## 3. Select components
 
+Your root has three generators. The first is the library's components; the second is ODF (keep it only if you select
+ODF); the third, which the example adds, reads your own `apps/*.yaml`. Keep the third: the tenant IdP, site
+certificates and any other app of your own go there, and its `repoURL` and `revision` reuse your
+`deploymentRepoURL` and `deploymentRevision` values through YAML aliases (generator fields can't take `@NAME@`).
+
 In `root/kustomization.yaml`, the patch that replaces `/spec/generators/0/git/files` is your component list: one
 `- path: apps/NAME/application.yaml` line per "use ours" row in your [decision table](README.md#your-choices-component-by-component).
 `cluster-config` is the exception: its line is `- path: cluster-config/application.yaml`.
@@ -145,10 +150,14 @@ Your deployment repository holds three kinds of values file. The library reads t
    scripts/render.sh
    ```
 
-   You should see `root renders; every input is set.` If you see `unset inputs:`, each line names a `REQUIRED-NAME`
-   you still have to set.
+   You should see `root renders; every input is set; every repository is an input.`
+
+   - `unset inputs:` lists each `REQUIRED-NAME` you still have to set.
+   - `repositories that aren't your library, deployment or catalog input:` lists a `repoURL` left over from the
+     example, in `root/self.yaml` or `apps/*.yaml`. Change it to your repository, or to `'@deploymentRepoURL@'`.
 
 2. Point `root/self.yaml` (Application `deployment-root`) at your deployment repository: set `spec.source.repoURL`.
+   Your own `apps/*.yaml` must use `'@deploymentRepoURL@'` and `'@deploymentRevision@'`, never a literal URL.
 
 3. Commit and push:
 
@@ -158,6 +167,6 @@ Your deployment repository holds three kinds of values file. The library reads t
 
 ## Checkpoint
 
-- `scripts/render.sh` prints `root renders; every input is set.`
+- `scripts/render.sh` prints `root renders; every input is set; every repository is an input.`
 - `root/self.yaml` points at your deployment repository.
 - Both repositories are pushed, and the catalog repository has a `main` branch.

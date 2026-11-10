@@ -8,7 +8,7 @@ through a Submariner ServiceExport.
 |---|---|
 | Runs on | hub (Redis); ingress and combined sites (Limitador points at it) |
 | Library component | `apps/limitador-redis` (select `apps/limitador-redis/application.yaml`) |
-| Choices | Use ours · Bring your own (not supported yet) · Skip |
+| Choices | Use ours. Bring your own and Skip are not supported yet. |
 
 ## Use ours
 
@@ -72,9 +72,11 @@ to change that Policy too. See [Gaps](../appendix-c-gaps.md). *(Unverified.)*
 
 ## Skip
 
-You can leave it out. Each site's Limitador then needs its storage reference removed, or it points at a Redis that
-doesn't exist, because `apps/rhoai-prerequisites` still configures it. With local counters, an organization's quota is
-enforced per ingress site, so a user who reaches several sites gets several quotas. *(Unverified.)*
+You can't skip it today. `apps/rhoai-prerequisites` enforces Policy `rhoai-limitador-redis` on every ingress and
+combined site: it writes Secret `kuadrant-system/limitador-redis` and sets each site's Limitador storage to that Redis.
+Without this component, Limitador points at a Redis that doesn't exist, and the Policy puts the setting back if you
+remove it. Making Redis optional, so counters stay local to each site, needs a library change
+([known gaps](../appendix-c-gaps.md)).
 
 ## Upgrade
 
