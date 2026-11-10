@@ -5,6 +5,9 @@ metadata:
   namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    # Moved here from apps/acm-models: on an existing install that Application's prune
+    # must not delete this before this one adopts it.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]

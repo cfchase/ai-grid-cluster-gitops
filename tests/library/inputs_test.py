@@ -40,6 +40,7 @@ Checks, each reported as ok or FAIL:
                    generators, never literal Secrets
   keycloak-separable  nothing outside apps/keycloak* installs or includes
                    Keycloak (the root's files list excepted)
+  move-guards      objects moved between Applications carry Prune=false
   samples          no model, MaaS object or subscription outside the selectable
                    apps/acm-models-samples component
   idp              the tenant Policy reads the IdP inputs (issuer, client,
@@ -694,6 +695,27 @@ def keycloak_separable():
                     fail("%s:%d references the Keycloak component: %s" % (relative, number, line.strip()))
 
 
+MOVED = (
+    ("apps/object-storage/odf/manifests/obc.yaml", "ObjectBucketClaim", "acm-observability-thanos"),
+    ("apps/acm-models-samples/hub/facebook-opt-125m-03-applicationset.yaml", "ApplicationSet", "acm-models-facebook-opt-125m"),
+    ("apps/acm-models-samples/hub/maas-03-applicationset.yaml", "ApplicationSet", "acm-models-maas"),
+    ("apps/acm-models-samples/hub/smollm2-135m-instruct-03-applicationset.yaml", "ApplicationSet", "acm-models-smollm2-135m-instruct"),
+)
+
+
+@check("move-guards")
+def move_guards():
+    """Objects moved from one Application to another carry Prune=false, so on
+    an existing install the old owner's prune can't delete them (and what they
+    created) before the new owner adopts them."""
+    for path, kind, name in MOVED:
+        with open(os.path.join(ROOT, path)) as handle:
+            doc = next(d for d in yaml.safe_load_all(handle) if d and d["kind"] == kind)
+        options = doc["metadata"].get("annotations", {}).get("argocd.argoproj.io/sync-options", "")
+        if doc["metadata"]["name"] != name or "Prune=false" not in options.split(","):
+            fail("%s: %s %s has no argocd.argoproj.io/sync-options Prune=false" % (path, kind, name))
+
+
 @check("bare-inputs")
 def bare_inputs():
     found = 0
@@ -725,6 +747,7 @@ def main():
     idp(inputs)
     samples()
     keycloak_separable()
+    move_guards()
     failed = sum(1 for _, ok in results if not ok)
     print("inputs tests: %d ok, %d failed" % (len(results) - failed, failed))
     return 1 if failed else 0
