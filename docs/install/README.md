@@ -65,28 +65,29 @@ Components come in three kinds:
 Fill in the following table before you start. Your "use ours" rows become the component list in your deployment
 repository ([step 3 of section 2](02-repositories.md#3-select-components)).
 
-| Component | Runs on | Use ours (select) | Bring your own | Skip | Example chose |
-|---|---|---|---|---|---|
-| [OpenShift GitOps](components/openshift-gitops.md) | hub | `apps/gitops-config` | Yes | No | ours |
-| [Registry pull secret and mirrors](components/pull-secret.md) | all | `apps/rhoai-prerequisites` | No | No | ours |
-| [cert-manager](components/cert-manager.md) | all | `apps/cert-manager` | Yes | No | the platform's |
-| [Object storage](components/object-storage.md) | hub | `apps/object-storage/s4` or `odf` | Yes | No | S4 |
-| [Load balancers](components/load-balancers.md) | all | `apps/metallb` | Yes (cloud) | No | AWS |
-| [GPU operator and NFD](components/gpu-operator.md) | inference, combined | installed by `apps/rhoai` (operators only) | Yes | CPU-only sites | operators only, no GPU model |
-| [Cluster sign-in and admins](components/cluster-sign-in.md) | all | `cluster-config` | Yes | No | ours |
-| [ACM](components/acm.md) | hub | `apps/acm` | Yes | No | ours |
-| [External Secrets](components/external-secrets.md) | hub | `apps/external-secrets` | Yes | No | ours |
-| [MaaS database](components/maas-db.md) | hub, ingress | `apps/maas-db` | No | No | ours |
-| [Rate-limit counters (Redis)](components/limitador-redis.md) | hub | `apps/limitador-redis` | No | No | ours |
-| [Tenant identity provider](components/tenant-idp.md) | hub | `apps/keycloak` | Yes | No | our own Keycloak |
-| [Observability and usage logs](components/observability.md) | hub, sites | `apps/ai-grid-o11y`, `apps/ai-grid-usage-logs` | No | Yes | skipped |
-| [OpenShift AI prerequisites](components/rhoai-prerequisites.md) | all | `apps/rhoai-prerequisites` | No | No | ours |
-| [OpenShift AI with MaaS](components/rhoai.md) | sites | `apps/rhoai` | No | No | ours |
-| [Grid bootstrap and enrollment](components/grid-bootstrap.md) | hub | `apps/grid-bootstrap` | No | No | ours |
-| [Status policies](components/ai-grid-policies.md) | hub | `apps/ai-grid-policies` | No | No | ours |
-| [Spoke delivery](components/spoke-delivery.md) | hub | `apps/ai-grid-spokes`, `apps/argo-registration` | No | No | ours |
-| [Model delivery](components/model-delivery.md) | hub | `apps/acm-models` | No | No | ours |
-| [Provider console](components/console.md) | hub | `apps/console` | No | Yes | ours |
+| Component | Runs on | Use ours (select) | Bring your own | Skip | Requires | Example chose |
+|---|---|---|---|---|---|---|
+| [OpenShift GitOps](components/openshift-gitops.md) | hub | `apps/gitops-config` | Yes | No | | ours |
+| [Registry pull secret and mirrors](components/pull-secret.md) | all | `apps/rhoai-prerequisites` | No | No | pre-release registry access (see [before you start](01-before-you-start.md)) | ours |
+| [cert-manager](components/cert-manager.md) | all | `apps/cert-manager` | Yes | No | | the platform's |
+| [Object storage](components/object-storage.md) | hub | `apps/object-storage/s4` or `odf` | Yes | No | S4: `apps/external-secrets` | S4 |
+| [Load balancers](components/load-balancers.md) | all | `apps/metallb` | Yes (cloud) | No | | AWS |
+| [GPU operator and NFD](components/gpu-operator.md) | inference, combined | installed by `apps/rhoai` (operators only) | Yes | CPU-only sites | | operators only, no GPU model |
+| [Cluster sign-in and admins](components/cluster-sign-in.md) | all | `cluster-config` | Yes | No | | ours |
+| [ACM](components/acm.md) | hub | `apps/acm` | Yes | No | object storage; Submariner: `apps/argo-registration` | ours |
+| [External Secrets](components/external-secrets.md) | hub | `apps/external-secrets` | Yes | No | | ours |
+| [MaaS database](components/maas-db.md) | hub, ingress | `apps/maas-db` | No | No | replicas: `apps/ai-grid-spokes` | ours |
+| [Rate-limit counters (Redis)](components/limitador-redis.md) | hub | `apps/limitador-redis` | No | No | Submariner (`apps/acm`) | ours |
+| [External services site](../../apps/external-services/README.md) | one labelled site | `apps/external-services` | No | Yes | a cluster labelled `ai-grid/external-services=true`; without one it installs nothing | selected, no site labelled |
+| [Tenant identity provider](components/tenant-idp.md) | hub | `apps/keycloak` | Yes, any OIDC provider; the console needs Keycloak | No | ours: `apps/maas-db`, `apps/external-secrets`, cert-manager | our own Keycloak |
+| [Observability and usage logs](components/observability.md) | hub, sites | `apps/ai-grid-o11y`, `apps/ai-grid-usage-logs` | No | Yes | ODF object storage | skipped |
+| [OpenShift AI prerequisites](components/rhoai-prerequisites.md) | all | `apps/rhoai-prerequisites` | No | No | | ours |
+| [OpenShift AI with MaaS](components/rhoai.md) | sites | `apps/rhoai` | No | No | `apps/rhoai-prerequisites`, `apps/grid-bootstrap`, a trusted MaaS certificate per ingress site | ours |
+| [Grid bootstrap and enrollment](components/grid-bootstrap.md) | hub | `apps/grid-bootstrap` | No | No | cert-manager | ours |
+| [Status policies](components/ai-grid-policies.md) | hub | `apps/ai-grid-policies` | No | No | | ours |
+| [Spoke delivery](components/spoke-delivery.md) | hub | `apps/ai-grid-spokes`, `apps/argo-registration` | No | No | `apps/ai-grid-policies` (namespace) | ours |
+| [Model delivery](components/model-delivery.md) | hub | `apps/acm-models` | No | No | a catalog repository | ours |
+| [Provider console](components/console.md) | hub | `apps/console` | No | Yes | `apps/acm-models`; a **Keycloak** tenant IdP with Organizations. With another IdP, skip the console and write the catalog yourself | ours |
 
 All component pages: [components](components/README.md).
 

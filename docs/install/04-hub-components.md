@@ -36,14 +36,24 @@ You should see the MultiClusterHub with status `Running`.
    [tenant identity provider](components/tenant-idp.md). Then rerun the `--expect-idp own` check from
    [step 1](03-prepare-hub.md#2-check-the-infrastructure).
 
-2. **The provider console's secrets:** the catalog token for the git writer, and the console's Keycloak admin
-   credentials. Run the library's script against the hub, with a file that holds the catalog-only token:
+2. **The provider console's secrets,** if you selected the console: the catalog token for the git writer, and the
+   console's Keycloak admin credentials. The console needs a Keycloak tenant IdP with Organizations, with Route
+   `keycloak` and Secret `keycloak-secrets` in `KEYCLOAK_NAMESPACE`; with another IdP, skip the console
+   ([provider console](components/console.md)).
+
+   The script calls Keycloak with `curl`. On a hub whose ingress certificate isn't publicly trusted, give it the
+   ingress CA, and let the backend reach Keycloak in-cluster:
 
    ```sh
    oc config use-context "$HUB_CONTEXT"
+   oc get configmap default-ingress-cert -n openshift-config-managed -o jsonpath='{.data.ca-bundle\.crt}' > ingress-ca.crt
    AI_GRID_GIT_TOKEN_FILE=CATALOG_TOKEN_FILE KEYCLOAK_NAMESPACE=KEYCLOAK_NAMESPACE KEYCLOAK_REALM=TENANT_REALM \
+     CURL_CA_BUNDLE=ingress-ca.crt KEYCLOAK_BACKEND_URL=http://keycloak.KEYCLOAK_NAMESPACE.svc:8080 \
      bash ../library/apps/console/create-secrets.sh
    ```
+
+   With a publicly trusted ingress certificate (as on the tested hub), you can leave out `CURL_CA_BUNDLE` and
+   `KEYCLOAK_BACKEND_URL`. *(The private-CA form is unverified.)*
 
    Replace the following:
 

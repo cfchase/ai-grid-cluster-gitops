@@ -1,5 +1,12 @@
 # Registry pull secret and image mirror
 
+> **Important:** This release installs pre-release OpenShift AI 3.6 builds. Every cluster pulls them from
+> `quay.io/rhoai`, and the image mirror the library delivers sends every `registry.redhat.io/rhaii*` image, model
+> runtimes included, to `registry.stage.redhat.io` with `NeverContactSource`. You need logins for both registries,
+> which Red Hat gives only to early-access partners; ask your Red Hat contact. Without a stage login, model images fail
+> to pull on every site. What changes at general availability (the catalog source, the mirror, which logins you need)
+> isn't decided in the library yet ([known gaps](../appendix-c-gaps.md)).
+
 OpenShift AI 3.6 pre-release builds come from `quay.io/rhoai`, which needs a login, and their images keep their
 `registry.redhat.io` names, so every cluster needs that login and an image mirror. You give the login once, on the hub,
 and [OpenShift AI prerequisites](./rhoai-prerequisites.md) delivers it and the mirror to every managed cluster, which
@@ -48,10 +55,11 @@ and [OpenShift AI prerequisites](./rhoai-prerequisites.md) delivers it and the m
    `RHOAI_QUAY_ALLOW_GENERIC_LOGIN=1`. The hub Secret then holds your general `quay.io` credential, although the
    Policy writes it to each cluster only as a `quay.io/rhoai` entry.
 
-4. If your models pull `registry.redhat.io/rhaii*` images and your clusters' pull secrets have no
-   `registry.stage.redhat.io` login, add one: run `create-hub-secret.sh` again with `RHOAI_STAGE_PULL_SECRET` set to
-   the base64 of `USERNAME:PASSWORD`, as well as `RHOAI_QUAY_PULL_SECRET`. The mirror sends those images to
-   `registry.stage.redhat.io` and never contacts the source. *(Unverified.)*
+4. Add a `registry.stage.redhat.io` login to the same auth file before you run the bootstrap script:
+   `podman login registry.stage.redhat.io`. The mirror sends every `registry.redhat.io/rhaii*` image, model runtimes
+   included, there and never contacts the source, so every site needs it. The example's `bootstrap.sh` passes it to
+   `create-hub-secret.sh` as `RHOAI_STAGE_PULL_SECRET`, and warns when the auth file has none. *(Unverified: the
+   tested site already had the model image.)*
 
 The hub's `rhoai-prerequisites` Policy then delivers, to every cluster in the `global` cluster set, the hub included:
 

@@ -81,8 +81,9 @@ You should see the script confirm the sign-in. Sign in once in the web console a
 ## 3. Install OpenShift GitOps and apply your root
 
 `bootstrap.sh` installs OpenShift GitOps from the library at your pinned commit, applies `root/` once, and seeds the
-`quay.io/rhoai` pull secret that the prerequisites Policy copies to every site. It reads the credential from the auth
-file and never prints it.
+`quay.io/rhoai` and `registry.stage.redhat.io` logins that the prerequisites Policy copies to every site
+([pull secret](components/pull-secret.md)). It reads them from the auth file and never prints them. It reads the
+library's URL and commit from your root's `libraryRepoURL` and `libraryRevision` inputs, so any git host works.
 
 ```sh
 KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=QUAY_AUTH_FILE ./bootstrap.sh
@@ -91,7 +92,8 @@ KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=QUAY_AUTH_FILE ./bootstrap.sh
 Replace the following:
 
 - `HUB_KUBECONFIG`: a kubeconfig file whose current context is the hub.
-- `QUAY_AUTH_FILE`: the auth file from the previous step.
+- `QUAY_AUTH_FILE`: the auth file from the previous step, with both logins. Without a stage login the script
+  warns, and model images won't pull on the sites.
 
 If the file holds only a general `quay.io` login, the script stops: that login would be copied to every site. Add a
 robot token for `quay.io/rhoai`, or accept the risk with `RHOAI_QUAY_ALLOW_GENERIC_LOGIN=1`.

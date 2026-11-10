@@ -10,6 +10,7 @@ and subscriptions as commits to the catalog repository, which [model delivery](.
 | Runs on | hub |
 | Library component | `apps/console` (select `apps/console/application.yaml`) |
 | Choices | Use ours. Bring your own isn't an option. Skip: yes, see [Skip](#skip). |
+| Requires | `apps/acm-models`; a **Keycloak** tenant IdP with Organizations. With any other OIDC provider, skip the console. |
 
 ## Use ours
 
@@ -85,8 +86,9 @@ Provisioned.
 
 ## Bring your own
 
-Not an option: the library has no contract for another console. You choose its Keycloak: the console works with any
-Keycloak that has a Route named `keycloak` and a Secret `keycloak-secrets` with keys `KC_BOOTSTRAP_ADMIN_USERNAME`
+Not an option: the library has no contract for another console. The console works only with Keycloak: it creates
+organizations through Keycloak's admin API. With a tenant IdP that isn't Keycloak, skip the console. You choose which
+Keycloak: the console works with any Keycloak that has a Route named `keycloak` and a Secret `keycloak-secrets` with keys `KC_BOOTSTRAP_ADMIN_USERNAME`
 and `KC_BOOTSTRAP_ADMIN_PASSWORD` in one namespace, and a realm for organizations; point `KEYCLOAK_NAMESPACE` and
 `KEYCLOAK_REALM` at them. The example deployment uses its own community Keycloak 26.8.0 in namespace `tenant-idp`, realm
 `tenants`.

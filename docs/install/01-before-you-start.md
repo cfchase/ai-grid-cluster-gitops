@@ -2,6 +2,13 @@
 
 Gather the following before you run anything. Each item names the section that needs it.
 
+> **Important:** This release installs pre-release OpenShift AI 3.6 builds. Every cluster pulls them from
+> `quay.io/rhoai`, and the image mirror the library delivers sends every `registry.redhat.io/rhaii*` image, model
+> runtimes included, to `registry.stage.redhat.io` with `NeverContactSource`. You need logins for both registries,
+> which Red Hat gives only to early-access partners; ask your Red Hat contact. Without a stage login, model images fail
+> to pull on every site. What changes at general availability (the catalog source, the mirror, which logins you need)
+> isn't decided in the library yet ([known gaps](appendix-c-gaps.md)).
+
 ## 1. Clusters
 
 | Cluster | OpenShift | Needs | Verified with |
@@ -44,21 +51,23 @@ DNS:
 
 | What | Used in | Notes |
 |---|---|---|
-| A `quay.io/rhoai` login in a container auth file | [Step 1](03-prepare-hub.md) | Prefer a robot token scoped to `quay.io/rhoai`. A general `quay.io` login is copied to every site, so the bootstrap script refuses it unless you set `RHOAI_QUAY_ALLOW_GENERIC_LOGIN=1`. |
+| A `quay.io/rhoai` login, and a `registry.stage.redhat.io` login, in a container auth file (pre-release access, see the preceding note) | [Step 1](03-prepare-hub.md) | Prefer a robot token scoped to `quay.io/rhoai`. A general `quay.io` login is copied to every site, so the bootstrap script refuses it unless you set `RHOAI_QUAY_ALLOW_GENERIC_LOGIN=1`. |
 | A git host the hub can read | [Section 2](02-repositories.md) | The example uses public GitHub repositories. |
 | A token that can write only the catalog repository | [Step 2](04-hub-components.md) | A GitHub fine-grained token with `contents: write` on that one repository. The console's git writer uses it. |
 | A tenant identity provider | [Section 2](02-repositories.md), [tenant identity provider](components/tenant-idp.md) | An OIDC issuer, a confidential client, and Keycloak Organizations if you use the console to create organizations. |
+| A cert-manager ClusterIssuer that can issue publicly trusted certificates by **DNS-01** on every ingress or combined site, or your own certificate for each site's MaaS hostname | [Step 4](06-join-grid.md#1-add-the-sites-values) | The MaaS gateway's load balancer serves its hostname directly, so HTTP-01 can't solve, and without a trusted certificate tenants get a certificate error. |
 | `cluster-admin` on every cluster | All steps | |
 
 ## 4. Tools on your workstation
 
-`oc`, `kustomize` (5.x), `jq`, `git`, `curl`, `python3`, `htpasswd` (from `httpd-tools`) and `clusteradm` (for the
-import in [step 3](05-prepare-site.md)).
+`oc`, `kubectl`, `kustomize` (5.x), `jq`, `git`, `curl`, `openssl`, `base64`, `python3` with PyYAML, `htpasswd`
+(from `httpd-tools`) and `clusteradm` (for the import in [step 3](05-prepare-site.md)).
 
 Check them:
 
 ```sh
-for c in oc kustomize jq git curl python3 htpasswd clusteradm; do command -v "$c" >/dev/null || echo "missing: $c"; done
+for c in oc kubectl kustomize jq git curl openssl base64 python3 htpasswd clusteradm; do command -v "$c" >/dev/null || echo "missing: $c"; done
+python3 -c "import yaml" || echo "missing: PyYAML"
 ```
 
 You should see no output.
@@ -75,4 +84,5 @@ Never delete an identity provider, or the namespace that runs it, that your plat
 
 - You have kubeconfig contexts with `cluster-admin` for the hub and every site.
 - Your tools check prints nothing.
-- You have the `quay.io/rhoai` auth file, a git host, and an identity provider plan.
+- You have the `quay.io/rhoai` and `registry.stage.redhat.io` logins, a git host, an identity provider plan, and a
+  DNS-01 ClusterIssuer (or certificates) for each ingress site.
