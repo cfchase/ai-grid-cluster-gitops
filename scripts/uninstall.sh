@@ -131,6 +131,7 @@ wait_gone() { # KUBECONFIG SECONDS DESCRIPTION GET-ARGS...
 del_subscription() { # KUBECONFIG KIND NAME NAMESPACE: an operator Subscription and its CSV, unless protected
   local kc=$1 kind=$2 name=$3 ns=$4 pkg csv
   pkg="$(oc --kubeconfig "$kc" get "$kind" "$name" -n "$ns" -o jsonpath='{.spec.name}' 2>/dev/null || true)"
+  [ -n "$pkg" ] || return 0 # already gone
   case " $protect_pkgs rhbk-operator openshift-cert-manager-operator nfd gpu-operator-certified " in
     *" $pkg "*) echo "kept (protected package): $pkg"; return 0 ;;
   esac
