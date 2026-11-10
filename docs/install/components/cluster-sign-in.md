@@ -17,11 +17,11 @@ them, on the hub and on each site. If the identity provider you sign in with fai
 an existing identity provider your platform uses.
 
 The example deployment's
-[`scripts/add-htpasswd-admin.sh`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/scripts/add-htpasswd-admin.sh)
+the library's [`scripts/add-htpasswd-admin.sh`](../../../scripts/add-htpasswd-admin.sh)
 does this:
 
 ```sh
-scripts/add-htpasswd-admin.sh --kubeconfig KUBECONFIG --password-file PASSWORD_FILE
+../library/scripts/add-htpasswd-admin.sh --kubeconfig KUBECONFIG --password-file PASSWORD_FILE
 ```
 
 Replace the following:

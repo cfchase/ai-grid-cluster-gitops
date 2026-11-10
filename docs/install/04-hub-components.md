@@ -79,7 +79,7 @@ You should see the MultiClusterHub with status `Running`.
 2. Every Application that reads the library runs your pinned commit:
 
    ```sh
-   scripts/check-revisions.sh --kubeconfig HUB_KUBECONFIG
+   ../library/scripts/check-revisions.sh --deployment . --kubeconfig HUB_KUBECONFIG
    ```
 
    You should see `N library sources checked, 0 not at SHA7`. The tested hub showed 21 sources before any site

@@ -7,7 +7,7 @@ Each entry gives the symptom, the cause and the fix. Component pages list more u
 **Cause:** your root's `values` don't set input `NAME`, or set it empty or with `"`, `'`, `\` or `@`.
 
 **Fix:** set it in `root/kustomization.yaml` ([section 2](02-repositories.md#4-set-every-input)), run
-`scripts/render.sh`, and push. Read the message with
+`../library/scripts/check-deployment.sh .`, and push. Read the message with
 `oc get applicationset apps -n openshift-gitops -o jsonpath='{.status.conditions}'`.
 
 ## A site's `rhoai-SITE` Application doesn't appear or doesn't render

@@ -12,7 +12,8 @@ An upgrade is one commit to your deployment repository that moves the library pi
 
    ```sh
    sed -i.bak "s/OLD_SHA/NEW_SHA/g" root/kustomization.yaml && rm root/kustomization.yaml.bak
-   scripts/render.sh
+   git -C ../library fetch -q && git -C ../library checkout -q NEW_SHA
+   ../library/scripts/check-deployment.sh .
    git commit -am "root: move the library pin to NEW_SHA_SHORT" && git push
    ```
 
@@ -20,7 +21,7 @@ An upgrade is one commit to your deployment repository that moves the library pi
    that nested ApplicationSets generate on the sites.
 
    ```sh
-   scripts/check-revisions.sh --kubeconfig HUB_KUBECONFIG
+   ../library/scripts/check-revisions.sh --deployment . --kubeconfig HUB_KUBECONFIG
    ```
 
    You should see `0 not at NEW_SHA7`. On the tested hub, 28 library sources moved in about 6 minutes with no manual

@@ -3,15 +3,15 @@
 In this step you check the hub's infrastructure, install OpenShift GitOps, and apply your root. From then on, Argo CD
 installs everything from git.
 
-Set these once in your shell for this section:
+Set the hub's context once in your shell for this section:
 
 ```sh
 export HUB_CONTEXT=HUB_CONTEXT_NAME
-export LIBRARY_SHA=$(sed -n 's#.*bootstrap/hub?ref=\([0-9a-f]\{40\}\).*#\1#p' root/kustomization.yaml)
 ```
 
 Replace `HUB_CONTEXT_NAME` with the hub's kubeconfig context. Run every command in this section from your deployment
-repository's checkout.
+repository's checkout, with the library checked out at your pin in `../library`
+([section 2](02-repositories.md#2-pin-the-library-commit)).
 
 ## 1. Add a break-glass admin
 
@@ -20,7 +20,7 @@ If the hub's only sign-in is an external identity provider, add an htpasswd admi
 
 ```sh
 oc config use-context "$HUB_CONTEXT"
-scripts/add-htpasswd-admin.sh --kubeconfig "$KUBECONFIG" --password-file HUB_ADMIN_PASSWORD_FILE
+../library/scripts/add-htpasswd-admin.sh --kubeconfig "$KUBECONFIG" --password-file HUB_ADMIN_PASSWORD_FILE
 ```
 
 Replace `HUB_ADMIN_PASSWORD_FILE` with a path outside any repository, such as `~/.ai-grid/hub-admin`. The script
@@ -32,11 +32,7 @@ You should see the script confirm the sign-in. Sign in once in the web console a
 
 ## 2. Check the infrastructure
 
-1. Get the library at your pinned commit:
-
-   ```sh
-   git clone -q --filter=blob:none LIBRARY_REPO_URL ../library && git -C ../library checkout -q "$LIBRARY_SHA"
-   ```
+1. Use the library checkout at your pinned commit, `../library`, from [section 2](02-repositories.md#2-pin-the-library-commit).
 
 2. Run the hub check:
 
@@ -80,13 +76,14 @@ You should see the script confirm the sign-in. Sign in once in the web console a
 
 ## 3. Install OpenShift GitOps and apply your root
 
-`bootstrap.sh` installs OpenShift GitOps from the library at your pinned commit, applies `root/` once, and seeds the
+The library's `bootstrap-hub.sh` checks your deployment, installs OpenShift GitOps from the library at your pinned
+commit, applies `root/` once, and seeds the
 `quay.io/rhoai` and `registry.stage.redhat.io` logins that the prerequisites Policy copies to every site
-([pull secret](components/pull-secret.md)). It reads them from the auth file and never prints them. It reads the
-library's URL and commit from your root's `libraryRepoURL` and `libraryRevision` inputs, so any git host works.
+([pull secret](components/pull-secret.md)). It reads them from the auth file and never prints them. It stops if
+`../library` isn't checked out at your `libraryRevision`.
 
 ```sh
-KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=QUAY_AUTH_FILE ./bootstrap.sh
+KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=QUAY_AUTH_FILE ../library/scripts/bootstrap-hub.sh --deployment .
 ```
 
 Replace the following:
