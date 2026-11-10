@@ -75,9 +75,23 @@ ODF); the third, which the example adds, reads your own `apps/*.yaml`. Keep the 
 certificates and any other app of your own go there, and its `repoURL` and `revision` reuse your
 `deploymentRepoURL` and `deploymentRevision` values through YAML aliases (generator fields can't take `@NAME@`).
 
-In `root/kustomization.yaml`, the patch that replaces `/spec/generators/0/git/files` is your component list: one
-`- path: apps/NAME/application.yaml` line per "use ours" row in your [decision table](README.md#your-choices-component-by-component).
-`cluster-config` is the exception: its line is `- path: cluster-config/application.yaml`.
+In `root/kustomization.yaml`, the patch that replaces `/spec/generators/0/git/files` is your component list. For each
+[hub item](hub/README.md), keep the example's lines, or swap in the lines for your choice from that item's page. The
+example's list, by item:
+
+| Hub item | The example's lines | Change them when |
+|---|---|---|
+| [0. Platform services](hub/00-platform-services.md#select-it) | `apps/gitops-config`, `cluster-config`, `apps/external-secrets` | Add `apps/cert-manager` if the hub has no cert-manager. |
+| [1. ACM](hub/01-acm.md#select-it) | `apps/acm`, `apps/object-storage/s4` | Use `apps/object-storage/odf` or your own bucket instead of S4; add `apps/metallb` for bare-metal sites. |
+| [2. Grid](hub/02-grid.md#select-it) | `apps/grid-bootstrap`, `apps/ai-grid-policies` | Never. |
+| [3. MaaS shared services](hub/03-maas-shared-services.md#select-it) | `apps/maas-db`, `apps/limitador-redis`, `apps/external-services` | `apps/external-services` installs nothing until a cluster is labelled; you can leave it out. |
+| [4. Tenant identity](hub/04-tenant-identity.md#select-it) | None: its own IdP is in `apps/tenant-idp.yaml` | Add `apps/keycloak` to use the library's Keycloak. |
+| [5. Provider console and model delivery](hub/05-console-and-model-delivery.md#select-it) | `apps/acm-models`, `apps/console` | Leave out `apps/console` with an IdP that isn't Keycloak. |
+| [6. Site delivery](hub/06-site-delivery.md#select-it) | `apps/ai-grid-spokes`, `apps/argo-registration`, `apps/rhoai`, `apps/rhoai-prerequisites` | Never. |
+| [7. Observability and usage logs](hub/07-observability.md#select-it) | None | Add `apps/ai-grid-o11y` and `apps/ai-grid-usage-logs` to turn it on. |
+
+Each line is `- path: apps/NAME/application.yaml`, except `- path: cluster-config/application.yaml` and the object
+storage options, `- path: apps/object-storage/s4/application.yaml` and `- path: apps/object-storage/odf/application.yaml`.
 
 - If you select ODF object storage, keep generator 1 and set its `repoURL`, `revision` and `values` the same way.
   Otherwise keep the example's `remove` of `/spec/generators/1`.
@@ -149,7 +163,7 @@ Your deployment repository holds three kinds of values file. The library reads t
    binding. Keep the line so the choice is visible in your repository.
 
 3. `values/clusters/SITE/rhoai.yaml`: one per ingress or combined site. You add these in
-   [step 4](06-join-grid.md#1-add-the-sites-values), before you label the site.
+   [join each site to the grid](06-join-grid.md#1-add-the-sites-values), before you label the site.
 
 ## 6. Render and push
 

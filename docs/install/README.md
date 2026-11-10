@@ -30,19 +30,25 @@ to the sites.
         provider console
 ```
 
+## How the install is organized: two parts
+
+- **[Hub and external dependencies](hub/README.md):** what the hub runs, grouped into eight items in install order, from
+  the platform services to observability. Each item's page gives your options, what the example chose, what it
+  requires, and the lines that select it in your deployment repository.
+- **[Spokes](spokes/README.md):** what each site brings, what you choose per site, and what the hub installs there. The
+  hub installs every site from the same Helm chart in the site's role, so a site has almost no component choices.
+
 ## Follow these in order
 
 | Page | What happens | Time |
 |---|---|---|
 | [Before you start](01-before-you-start.md) | Clusters, network, credentials and tools you need | 15 minutes |
-| [Create your deployment and catalog repositories](02-repositories.md) | Your component choices and inputs, the library pinned | 30 minutes |
-| [Step 1: prepare the hub](03-prepare-hub.md) | Infrastructure checks, OpenShift GitOps, your root applied | 15 minutes |
-| [Step 2: install the hub components](04-hub-components.md) | Argo CD installs ACM, the grid bootstrap, the MaaS database, the console | 30 minutes |
-| [Step 3: prepare each site and join it to ACM](05-prepare-site.md) | Infrastructure checks, import into ACM | 15 minutes per site |
-| [Step 4: join each site to the grid](06-join-grid.md) | Labels install OpenShift AI in the site's role and enrol it | 45 to 60 minutes per site |
+| [Create your deployment and catalog repositories](02-repositories.md) | Your hub choices and inputs, the library pinned | 30 minutes |
+| [Prepare the hub](03-prepare-hub.md) | Infrastructure checks, OpenShift GitOps, your root applied | 15 minutes |
+| [Install the hub components](04-hub-components.md) | Argo CD installs ACM, the grid bootstrap, the MaaS database, the console | 30 minutes |
+| [Prepare each site and join it to ACM](05-prepare-site.md) | Infrastructure checks, import into ACM | 15 minutes per site |
+| [Join each site to the grid](06-join-grid.md) | Labels install OpenShift AI in the site's role and enrol it | 45 to 60 minutes per site |
 | [First use: deploy a model and call it](08-first-use.md) | A model from the provider console, a tenant calling it | 30 minutes |
-
-"Step 1" to "step 4" in this guide always mean the four install pages in this table.
 
 ## Three repositories
 
@@ -55,49 +61,33 @@ to the sites.
 Your hub's Argo CD reads all three. Upgrading AI Grid is one commit to your deployment repository that moves the
 library pin.
 
-## Your choices, component by component
+## Your choices
 
-Components come in three kinds:
+Decide the hub's eight items before you start. Each item's selection lines go in your deployment repository
+([select components](02-repositories.md#3-select-components)).
 
-- **Infrastructure:** often yours already, such as cert-manager or object storage. The library can install some.
-- **Shared services:** ours, or yours connected through a contract, such as the tenant identity provider.
-- **AI Grid itself:** always ours, configured by inputs.
+| Item | Options | Requires | Example chose |
+|---|---|---|---|
+| [0. Platform services](hub/00-platform-services.md): OpenShift GitOps, cert-manager, External Secrets, cluster sign-in and admins, a default StorageClass | Each: ours, or the platform's or yours | A git host the hub can read; `cluster-admin` on the hub | Ours, except the platform's cert-manager |
+| [1. ACM, the multicluster engine and Submariner](hub/01-acm.md) | Ours, or your existing ACM hub (partly) | Object storage (S4, ODF or yours); a load balancer and two Submariner gateway nodes per cluster | Ours, with S4 |
+| [2. Grid](hub/02-grid.md): bootstrap, enrollment, status policies | No choice | cert-manager (0), ACM (1) | Ours |
+| [3. MaaS shared services](hub/03-maas-shared-services.md): MaaS database primary, rate-limit Redis | No choice | Submariner, to export them (1) | Ours |
+| [4. Tenant identity](hub/04-tenant-identity.md) | Our Keycloak, or your OIDC provider | Ours: MaaS database (3), cert-manager and External Secrets (0). Yours: an OIDC issuer, a confidential client and its CA | Its own Keycloak |
+| [5. Provider console and model delivery](hub/05-console-and-model-delivery.md) | Console optional; model delivery required | Console: Keycloak with Organizations (4); a token that can write only the catalog repository | Both |
+| [6. Site delivery](hub/06-site-delivery.md): site Placements, Argo CD registration, registry access | No choice | ACM (1); the `quay.io/rhoai` and stage logins (pre-release) | Ours |
+| [7. Observability and usage logs](hub/07-observability.md) | On or off | ODF object storage | Off |
 
-Fill in the following table before you start. Your "use ours" rows become the component list in your deployment
-repository ([repositories, part 3](02-repositories.md#3-select-components)).
-
-| Component | Runs on | Use ours (select) | Bring your own | Skip | Requires | Example chose |
-|---|---|---|---|---|---|---|
-| [OpenShift GitOps](hub/00-platform-services.md#openshift-gitops) | hub | `apps/gitops-config` | Yes | No | | ours |
-| [OpenShift AI prerequisites: pull secret and mirror](hub/06-site-delivery.md#registry-access-and-openshift-ai-prerequisites) | all | `apps/rhoai-prerequisites` | Credentials only | No | pre-release registry access (see [before you start](01-before-you-start.md)) | ours |
-| [cert-manager](hub/00-platform-services.md#cert-manager) | all | `apps/cert-manager` | Yes | No | | the platform's |
-| [MaaS gateway certificate](spokes/maas-certificate.md) | ingress, combined | none yet | Yes, required | No | a DNS-01 ClusterIssuer or your own certificate | DNS-01 Certificate as its own app |
-| [Object storage](hub/01-acm.md#object-storage) | hub | `apps/object-storage/s4` or `odf` | Yes | No | S4: `apps/external-secrets` | S4 |
-| [Load balancers](spokes/networking.md#load-balancers) | all | `apps/metallb` | Yes (cloud) | No | | AWS |
-| [GPU operator and NFD](spokes/openshift-ai.md#nvidia-gpu-operator-and-node-feature-discovery) | inference, combined | installed by `apps/rhoai` (operators only) | Yes | CPU-only sites | | operators only, no GPU model |
-| [Cluster sign-in and admins](hub/00-platform-services.md#cluster-sign-in-and-admins) | all | `cluster-config` | Yes | No | | ours |
-| [ACM](hub/01-acm.md#red-hat-advanced-cluster-management) | hub | `apps/acm` | Yes | No | object storage; Submariner: `apps/argo-registration` | ours |
-| [Submariner](hub/01-acm.md#submariner) | all | part of `apps/acm` | Only with your own ACM | No | load balancers; gateway nodes (`cluster-config`) | ours |
-| [External Secrets](hub/00-platform-services.md#external-secrets-operator) | hub | `apps/external-secrets` | Yes | No | | ours |
-| [MaaS database](hub/03-maas-shared-services.md#maas-database) | hub, ingress | `apps/maas-db` | No | No | replicas: `apps/ai-grid-spokes` | ours |
-| [Rate-limit counters (Redis)](hub/03-maas-shared-services.md#limitadors-redis) | hub | `apps/limitador-redis` | No | No | Submariner (`apps/acm`) | ours |
-| [External services site](../../apps/external-services/README.md) | one labelled site | `apps/external-services` | No | Yes | a cluster labelled `ai-grid/external-services=true`; without one it installs nothing | selected, no site labelled |
-| [Tenant identity provider](hub/04-tenant-identity.md#tenant-identity-provider) | hub | [Keycloak](hub/04-tenant-identity.md#keycloak) (`apps/keycloak`) | Yes, any OIDC provider; the console needs Keycloak | No | ours: `apps/maas-db`, `apps/external-secrets`, cert-manager | our own Keycloak |
-| [Observability and usage logs](hub/07-observability.md) | hub, sites | `apps/ai-grid-o11y`, `apps/ai-grid-usage-logs` | No | Yes | ODF object storage | skipped |
-| [OpenShift AI with MaaS](spokes/openshift-ai.md#openshift-ai-with-maas) | sites | `apps/rhoai` | No | No | `apps/rhoai-prerequisites`, `apps/grid-bootstrap`, a trusted MaaS certificate per ingress site | ours |
-| [Grid bootstrap and enrollment](hub/02-grid.md#grid-bootstrap) | hub | `apps/grid-bootstrap` | No | No | cert-manager | ours |
-| [Status policies](hub/02-grid.md#ai-grid-policies) | hub | `apps/ai-grid-policies` | No | No | | ours |
-| [Spoke delivery](hub/06-site-delivery.md#spoke-delivery) | hub | `apps/ai-grid-spokes`, `apps/argo-registration` | No | No | `apps/ai-grid-policies` (namespace) | ours |
-| [Model delivery](hub/05-console-and-model-delivery.md#model-delivery) | hub | `apps/acm-models` | No | No | a catalog repository | ours |
-| [Provider console](hub/05-console-and-model-delivery.md#provider-console) | hub | `apps/console` | No | Yes | `apps/acm-models`; a **Keycloak** tenant IdP with Organizations. With another IdP, skip the console and write the catalog yourself | ours |
-
-All component pages: [hub](hub/README.md) and [spokes](spokes/README.md).
+For each site you choose only its role (`ingress`, `inference` or `combined`) and, for an ingress or combined site, the
+MaaS hostname prefix and a certificate for it. Each site brings OpenShift 4.21 or later, a default StorageClass, a load
+balancer, two Submariner gateway nodes, DNS that never answers `NXDOMAIN` for `AAAA`, and GPUs for GPU models. The hub
+installs the rest there: OpenShift AI with MaaS and the grid in the site's role, grid membership, a MaaS database
+replica, Submariner, cluster sign-in and admins, and the models. See [Spokes](spokes/README.md).
 
 ## Reference
 
 Open these when a page sends you there, or after the install:
 
-- [Hub and external dependencies](hub/README.md) and [spokes](spokes/README.md): the component pages.
+- [Hub and external dependencies](hub/README.md) and [Spokes](spokes/README.md): every component in detail.
 - [Operate](09-operate.md): upgrade, add and remove sites, rotate credentials, uninstall.
 - [Troubleshooting](10-troubleshooting.md).
 - Appendices: [A. Inputs and values reference](appendix-a-inputs.md) ·

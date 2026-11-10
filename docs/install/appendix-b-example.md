@@ -19,4 +19,4 @@ The scripts this guide runs live in the library's `scripts/`: `bootstrap-hub.sh`
 `check-revisions.sh`, `add-htpasswd-admin.sh`, `wipe-site.sh`, `console-call.sh`. The example keeps only
 `create-test-tenant.sh`, which is specific to its own Keycloak.
 
-What it chose: [decision table](README.md#your-choices-component-by-component), last column.
+What it chose: [your choices](README.md#your-choices), last column, and each [hub item](hub/README.md)'s "Example chose".
