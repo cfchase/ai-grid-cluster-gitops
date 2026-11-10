@@ -6,6 +6,9 @@ and prints one line per object to delete, in order:
 
     GROUP<TAB>GROUP_VERSION_KIND<TAB>NAMESPACE<TAB>NAME
 
+NAMESPACE is "-" for a cluster-scoped object (shell `read` collapses empty
+tab-separated fields).
+
 Every Application records the objects it applied in status.resources. Those,
 plus the namespaces Applications create, are what the install put on a
 cluster; operators then create the rest, which they remove themselves when
@@ -160,7 +163,7 @@ def main():
     apps = json.load(sys.stdin).get("items", [])
     rows, skipped = plan(apps, a.mode, a.site, protected_ns, protected_pkgs)
     for group, gvk, ns, name in rows:
-        print(f"{group}\t{gvk}\t{ns}\t{name}")
+        print(f"{group}\t{gvk}\t{ns or '-'}\t{name}")
     for gvk, ns, name, why in skipped:
         print(f"kept ({why}): {gvk} {ns + '/' if ns else ''}{name}", file=sys.stderr)
 
