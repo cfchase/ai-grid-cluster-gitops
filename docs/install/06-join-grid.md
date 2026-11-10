@@ -149,8 +149,7 @@ oc --context "$HUB_CONTEXT" get applications.argoproj.io -n openshift-gitops | g
 ```
 
 You should see at least `rhoai-SITE-…`, `cluster-config-SITE-…` and `acm-submariner-SITE`, plus `maas-db-SITE` on an
-ingress or combined site. OpenShift AI takes 45 to 60 minutes. The site's nodes reboot once when the image mirror
-arrives.
+ingress or combined site. OpenShift AI takes 45 to 60 minutes.
 
 ## 3. Verify
 

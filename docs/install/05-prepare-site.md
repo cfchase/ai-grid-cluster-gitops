@@ -53,7 +53,7 @@ A cluster that was a site of another hub must leave that hub first, then lose it
 
 3. Run it without `--dry-run`. It removes models, MaaS objects, the DataScienceCluster, the grid, the gateways, their
    operators and leftover webhooks, in that order, and leaves the cluster pull secret and image mirror (removing a
-   mirror reboots every node).
+   mirror drains every node, and the new hub delivers the same mirror again).
 
 You should end with no DataScienceCluster, GridNetwork, GridSite or LLMInferenceService, and no `Terminating`
 namespaces:
@@ -70,8 +70,8 @@ bash ../library/scripts/check-prerequisites.sh --step spoke --context "$SITE_CON
 ```
 
 You should see `OK` for `OpenShift 4.21 or later` and `default StorageClass`. The hub delivers the rest: the
-`quay.io/rhoai` pull secret and image mirror arrive by Policy once the site is imported, and the site's nodes reboot once
-for the mirror ([OpenShift AI prerequisites](components/rhoai-prerequisites.md)).
+`quay.io/rhoai` pull secret and image mirror arrive by Policy once the site is imported, without draining or rebooting the nodes
+([OpenShift AI prerequisites](components/rhoai-prerequisites.md)).
 
 Also check, for every role:
 
