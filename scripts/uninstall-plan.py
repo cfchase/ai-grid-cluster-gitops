@@ -26,10 +26,10 @@ Groups, in the order an uninstall deletes them:
   namespaces        the namespaces themselves
 
 Never planned: CustomResourceDefinitions (kept, see docs/install/09-operate.md),
-Argo CD's own Applications and ApplicationSets (the uninstall stops Argo CD
-first), anything in a protected namespace, the protected namespaces themselves,
-openshift-*, kube-* and default namespaces, and OLM objects for protected
-packages.
+Argo CD's own Applications, ApplicationSets and ArgoCD (the uninstall stops
+Argo CD first and removes it last), anything in a protected namespace, the
+protected namespaces themselves, openshift-*, kube-* and default namespaces,
+and OLM objects for protected packages.
 
 Usage: uninstall-plan.py --mode hub|site [--site NAME]
                          [--protect-namespaces "A B"] [--protect-packages "A B"]
@@ -67,6 +67,7 @@ SKIP_KINDS = {
     ("argoproj.io", "Application"),
     ("argoproj.io", "ApplicationSet"),
     ("argoproj.io", "AppProject"),
+    ("argoproj.io", "ArgoCD"),
     ("config.openshift.io", "OAuth"),
     ("cert-manager.io", "ClusterIssuer"),
 }

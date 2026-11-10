@@ -116,23 +116,39 @@ wait_gone() { # KUBECONFIG SECONDS DESCRIPTION GET-ARGS...
   done
   echo "warning: $what still present after ${secs}s" >&2
 }
+del_subscription() { # KUBECONFIG KIND NAME NAMESPACE: an operator Subscription and its CSV, unless protected
+  local kc=$1 kind=$2 name=$3 ns=$4 pkg csv
+  pkg="$(oc --kubeconfig "$kc" get "$kind" "$name" -n "$ns" -o jsonpath='{.spec.name}' 2>/dev/null || true)"
+  case " $protect_pkgs rhbk-operator openshift-cert-manager-operator nfd gpu-operator-certified " in
+    *" $pkg "*) echo "kept (protected package): $pkg"; return 0 ;;
+  esac
+  csv="$(oc --kubeconfig "$kc" get "$kind" "$name" -n "$ns" -o jsonpath='{.status.installedCSV}' 2>/dev/null || true)"
+  del "$kc" "$kind" "$name" -n "$ns"
+  [ -z "$csv" ] || del "$kc" clusterserviceversions.operators.coreos.com "$csv" -n "$ns"
+}
+sweep_ns() { # KUBECONFIG NAMESPACE...: namespaces the install created that Argo CD's inventory doesn't list
+  local kc=$1 ns s; shift
+  for ns in "$@"; do
+    case " $protect_ns keycloak cert-manager cert-manager-operator openshift-cert-manager-operator openshift-nfd nvidia-gpu-operator openshift-config openshift-authentication " in
+      *" $ns "*) echo "kept (protected namespace): $ns"; continue ;;
+    esac
+    oc --kubeconfig "$kc" get ns "$ns" >/dev/null 2>&1 || continue
+    for s in $(oc --kubeconfig "$kc" get subscriptions.operators.coreos.com -n "$ns" -o name 2>/dev/null); do
+      del_subscription "$kc" subscriptions.operators.coreos.com "${s#*/}" "$ns"
+    done
+    del "$kc" ns "$ns"
+  done
+}
 run_plan() { # KUBECONFIG PLANFILE GROUP...: delete one group at a time, waiting for each
   local kc=$1 plan=$2; shift 2
-  local group kind ns name pkg csv
+  local group kind ns name
   for group in "$@"; do
     grep -q "^$group	" "$plan" || continue
     say "plan: $group"
     while IFS=$'\t' read -r g kind ns name; do
       [ "$g" = "$group" ] || continue
       [ "$ns" != - ] || ns=""
-      if [ "$kind" = Subscription.v1alpha1.operators.coreos.com ]; then
-        pkg="$(oc --kubeconfig "$kc" get "$kind" "$name" -n "$ns" -o jsonpath='{.spec.name}' 2>/dev/null || true)"
-        case " $protect_pkgs rhbk-operator openshift-cert-manager-operator nfd gpu-operator-certified " in
-          *" $pkg "*) echo "kept (protected package): $pkg"; continue ;;
-        esac
-        csv="$(oc --kubeconfig "$kc" get "$kind" "$name" -n "$ns" -o jsonpath='{.status.installedCSV}' 2>/dev/null || true)"
-        del "$kc" "$kind" "$name" -n "$ns"
-        [ -z "$csv" ] || del "$kc" clusterserviceversions.operators.coreos.com "$csv" -n "$ns"
+      if [ "$kind" = Subscription.v1alpha1.operators.coreos.com ]; then del_subscription "$kc" "$kind" "$name" "$ns"
       elif [ -n "$ns" ]; then del "$kc" "$kind" "$name" -n "$ns"
       else del "$kc" "$kind" "$name"; fi
     done < "$plan"
@@ -201,9 +217,17 @@ for x in json.load(sys.stdin)["items"]:
 
   say "site: everything else the install applied"
   run_plan "$site_kc" "$tmp/plan" policies custom-resources objects cluster-scoped operators namespaces
-  for ns in open-cluster-management-agent open-cluster-management-agent-addon submariner-operator; do
-    if S get ns "$ns" >/dev/null 2>&1; then del "$site_kc" ns "$ns"; fi
-  done
+
+  # Left by the ACM import, the hub's Policies and the operators, outside Argo CD's
+  # inventory (dry run on site-b, 2026-11-10). The Klusterlet goes first, while its
+  # operator still runs to remove the agent.
+  say "site: ACM agent and other leftovers"
+  if S get klusterlet klusterlet >/dev/null 2>&1; then
+    del "$site_kc" klusterlet klusterlet
+    wait_gone "$site_kc" 300 "Klusterlet" klusterlet klusterlet
+  fi
+  sweep_ns "$site_kc" open-cluster-management-agent open-cluster-management-agent-addon submariner-operator \
+    open-cluster-management-policies open-cluster-management "$site" ai-tenants redhat-ai-gateway-infra
 
   say "check: $site"
   $dry_run || check_admin "$site_kc" "$site" "$site_pw_file"
@@ -257,9 +281,13 @@ for r in "apiservice v1.admission.cluster.open-cluster-management.io" "apiservic
   # shellcheck disable=SC2086
   if H get $r >/dev/null 2>&1; then del "$hub_kc" $r; fi
 done
-for ns in multicluster-engine open-cluster-management-hub open-cluster-management-observability; do
-  if H get ns "$ns" >/dev/null 2>&1; then del "$hub_kc" ns "$ns"; fi
-done
+sweep_ns "$hub_kc" multicluster-engine open-cluster-management-hub open-cluster-management-observability
+
+# Left by ACM's add-ons, the multicluster engine and the operators, outside Argo CD's
+# inventory (dry run on proto-hub, 2026-11-10).
+say "hub: other leftovers"
+sweep_ns "$hub_kc" default-broker submariner-operator openshift-cluster-observability-operator external-secrets \
+  ai-grid-internal-models redhat-ods-operator hive hypershift local-cluster
 
 say "OpenShift GitOps"
 for a in $(H get argocds.argoproj.io -A -o name 2>/dev/null); do del "$hub_kc" "$a" -n openshift-gitops; done

@@ -23,6 +23,7 @@ ok "built-in objects in a deleted namespace aren't listed" '! has "$hub" "maas-d
 ok "namespaces the install created are deleted" 'has "$hub" "namespaces	Namespace	-	maas-db" && has "$hub" "namespaces	Namespace	-	cnpg-system"'
 ok "CRDs are kept" '! has "$hub" CustomResourceDefinition'
 ok "Argo CD objects are left to the Argo CD step" '! has "$hub" ApplicationSet'
+ok "the ArgoCD instance is left to the GitOps step" '! has "$hub" "ArgoCD.v1beta1.argoproj.io"'
 ok "cluster-scoped objects are planned" 'has "$hub" "cluster-scoped	ClusterRoleBinding.v1.rbac.authorization.k8s.io	-	cluster-admin-admin"'
 ok "objects in a protected namespace are kept and reported" '! has "$hub" "openshift-config	something" && has "$hub_err" "kept (protected namespace): ConfigMap openshift-config/something"'
 ok "objects in a system namespace are deleted, the namespace isn't" 'has "$hub" "objects	ConfigMap	openshift-ingress	kept-ns-object" && ! has "$hub" "Namespace	-	openshift-gitops"'
