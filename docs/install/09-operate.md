@@ -93,7 +93,14 @@ Left on purpose, on every cluster:
 
 The uninstall reads what to delete from Argo CD's own record of what it applied (each Application's
 `status.resources`), so your own apps in `apps/*.yaml` go too. Operators then remove what they created, because their
-custom resources are deleted while they still run.
+custom resources are deleted while they still run. What operators and add-ons leave outside that record and outside
+the namespaces the uninstall deletes (in `openshift-ingress`, `openshift-monitoring`, `kube-system` and cluster-wide:
+RBAC, console entries, ACM's cluster claims and image sets) is listed in `scripts/uninstall-leftovers.tsv`, which each
+step deletes last. Add your own lines there if your apps leave something behind.
+
+Also left, because they're inert and a reinstall recreates or reuses them: the admin, edit, view and crdview roles
+OLM generates for each CRD, OLM's `Operator` objects (OLM recreates them while labelled CRDs exist), and OLM's bundle
+caches in `openshift-marketplace`.
 
 ### 1. Empty the catalog
 
@@ -157,7 +164,9 @@ command again with the same plan file to resume. It:
    `redhat-ai-gateway-infra`, each only if it's still there.
 6. Signs in as the break-glass admin again.
 
-A site takes about 20 to 40 minutes. *(Unverified.)*
+A site took about 15 minutes on site-b (2026-11-10), not counting the stops this run fixed: the hub's detach and
+Submariner's removal a few minutes, `wipe-site.sh` about 10 (most of it the DataScienceCluster and operators), the
+rest under a minute.
 
 ### 4. Uninstall the hub
 
@@ -184,7 +193,8 @@ It refuses while any site is still managed. It:
    reinstall's writes.
 6. Signs in as the break-glass admin again.
 
-A hub takes about 30 to 60 minutes; MultiClusterHub alone can take 20. *(Unverified.)*
+A hub took about 25 minutes on proto-hub (2026-11-10): stopping Argo CD about 2 (six rounds), MultiClusterHub and
+the multicluster engine about 7, OpenShift GitOps up to 10.
 
 ### 5. Check
 

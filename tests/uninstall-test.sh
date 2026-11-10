@@ -31,9 +31,15 @@ case "$*" in
   "get klusterlet klusterlet") [ -s "$w.klusterlet" ] ;;
   get\ ns\ *) grep -qx "$3" "$w.ns" 2>/dev/null ;;
   "get validatingwebhookconfigurations -o json") cat "$w.vwh" 2>/dev/null ;;
+  "get clusterimagesets.hive.openshift.io -o name") cat "$w.cis" 2>/dev/null ;;
+  "get configmaps cluster-monitoring-config -n openshift-monitoring -o name") [ -s "$w.cmc" ] && echo configmap/cluster-monitoring-config ;;
+  "get configmap/cluster-monitoring-config -n openshift-monitoring -o jsonpath="*) cat "$w.cmc" ;;
+  "get consoleplugins.console.openshift.io -o jsonpath="*) cat "$w.plugins" 2>/dev/null ;;
+  "get consoles.operator.openshift.io cluster -o jsonpath="*) cat "$w.enabled" 2>/dev/null ;;
+  get\ consoleplugins.console.openshift.io\ *) grep -qx "$3" "$w.plugin-objects" 2>/dev/null ;;
   get\ applicationsets.argoproj.io*) echo "applicationset.argoproj.io/apps" ;;
   get\ applications.argoproj.io\ -n\ openshift-gitops\ -o\ name) echo "application.argoproj.io/acm" ;;
-  get\ secrets*) echo '{"items":[]}' ;;
+  get\ secrets\ -n\ openshift-gitops*) echo '{"items":[]}' ;;
   delete*|patch*|label*) echo "WRITE: $*" >> "$STUB/writes" ;;
   get*" -o "*|get*--no-headers*) exit 0 ;;   # an empty list
   *) exit 1 ;;                                # not found
@@ -104,4 +110,14 @@ world; echo '{"items":[{"metadata":{"name":"dangling"},"webhooks":[{"clientConfi
 out=$(run --step hub --dry-run "${HUB[@]}"); total=$((total+1))
 if grep -q "would delete: validatingwebhookconfigurations dangling" <<<"$out" && ! grep -q "would delete: validatingwebhookconfigurations alive" <<<"$out"; then echo "   ok   only webhooks into deleted namespaces are dropped"
 else fails=$((fails+1)); echo "   FAIL only webhooks into deleted namespaces are dropped"; fi
+world; printf 'clusterimageset.hive.openshift.io/img4.20.0\n' > "$T/hub.kc.cis"
+t "listed leftovers are swept" 0 "would delete: clusterimageset.hive.openshift.io/img4.20.0" --step hub --dry-run "${HUB[@]}"
+world; echo "cluster-monitoring-operator" > "$T/hub.kc.cmc"
+t "a platform's own cluster-monitoring-config is kept" 0 "kept \(not written by hypershift-operator-manager\): configmap/cluster-monitoring-config" --step hub --dry-run "${HUB[@]}"
+world; echo "hypershift-operator-manager kubectl" > "$T/hub.kc.cmc"
+t "HyperShift's cluster-monitoring-config is deleted" 0 "would delete: configmap/cluster-monitoring-config -n openshift-monitoring" --step hub --dry-run "${HUB[@]}"
+world; printf 'gone-plugin=kuadrant-system\n' > "$T/site.kc.plugins"
+t "a console plugin whose backend namespace is gone is deleted" 0 "would delete: consoleplugins.console.openshift.io gone-plugin" --step site --dry-run "${HUB[@]}" "${SITE[@]}"
+world; printf 'monitoring-plugin\nmissing-plugin\n' > "$T/hub.kc.enabled"; echo monitoring-plugin > "$T/hub.kc.plugin-objects"
+t "an enabled plugin with no ConsolePlugin is disabled" 0 "console plugin missing-plugin has no ConsolePlugin" --step hub --dry-run "${HUB[@]}"
 echo "uninstall tests: $((total-fails)) ok, $fails failed"; exit "$fails"

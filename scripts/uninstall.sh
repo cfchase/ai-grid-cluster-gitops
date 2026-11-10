@@ -204,6 +204,46 @@ for w in (json.loads(raw) if raw else {}).get("items", []):
     done || true
   done
 }
+sweep_leftovers() { # KUBECONFIG STEP: the objects in uninstall-leftovers.tsv for this step
+  local kc=$1 want=$2 step kind ns target flags names n mgrs
+  local prot=" $protect_ns keycloak cert-manager cert-manager-operator openshift-cert-manager-operator openshift-nfd nvidia-gpu-operator openshift-config openshift-authentication "
+  while IFS=$'\t' read -r step kind ns target flags; do
+    case "$step" in ''|'#'*) continue ;; esac
+    [ "$step" = "$want" ] || continue
+    local nsargs=(); [ "$ns" = - ] || { case "$prot" in *" $ns "*) continue ;; esac; nsargs=(-n "$ns"); }
+    case "$target" in
+      label:*) names="$(oc --kubeconfig "$kc" get "$kind" ${nsargs[@]+"${nsargs[@]}"} -l "${target#label:}" -o name 2>/dev/null || true)" ;;
+      all) names="$(oc --kubeconfig "$kc" get "$kind" ${nsargs[@]+"${nsargs[@]}"} -o name 2>/dev/null || true)" ;;
+      prefix:*) names="$(oc --kubeconfig "$kc" get "$kind" ${nsargs[@]+"${nsargs[@]}"} -o name 2>/dev/null | awk -F/ -v p="${target#prefix:}" 'index($2, p) == 1' || true)" ;;
+      *) names="$(oc --kubeconfig "$kc" get "$kind" "$target" ${nsargs[@]+"${nsargs[@]}"} -o name 2>/dev/null || true)" ;;
+    esac
+    for n in $names; do
+      case "$flags" in
+        managed-by:*)
+          mgrs="$(oc --kubeconfig "$kc" get "$n" ${nsargs[@]+"${nsargs[@]}"} -o jsonpath='{.metadata.managedFields[*].manager}' 2>/dev/null || true)"
+          case " $mgrs " in *" ${flags#managed-by:} "*) ;; *) echo "kept (not written by ${flags#managed-by:}): $n"; continue ;; esac ;;
+        strip) $dry_run || oc --kubeconfig "$kc" patch "$n" ${nsargs[@]+"${nsargs[@]}"} --type merge -p '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true ;;
+      esac
+      del "$kc" "$n" ${nsargs[@]+"${nsargs[@]}"}
+    done
+  done < "$here/uninstall-leftovers.tsv"
+}
+drop_dangling_console_plugins() { # KUBECONFIG: enabled plugins with no ConsolePlugin; ConsolePlugins whose backend namespace is gone
+  local kc=$1 p ns keep=()
+  for p in $(oc --kubeconfig "$kc" get consoleplugins.console.openshift.io -o jsonpath='{range .items[*]}{.metadata.name}={.spec.backend.service.namespace}{"\n"}{end}' 2>/dev/null || true); do
+    ns=${p#*=}; [ -z "$ns" ] || oc --kubeconfig "$kc" get ns "$ns" >/dev/null 2>&1 || del "$kc" consoleplugins.console.openshift.io "${p%%=*}"
+  done
+  local enabled; enabled="$(oc --kubeconfig "$kc" get consoles.operator.openshift.io cluster -o jsonpath='{range .spec.plugins[*]}{@}{"\n"}{end}' 2>/dev/null || true)"
+  [ -n "$enabled" ] || return 0
+  local changed=false
+  for p in $enabled; do
+    if oc --kubeconfig "$kc" get consoleplugins.console.openshift.io "$p" >/dev/null 2>&1; then keep+=("$p"); else changed=true; echo "console plugin $p has no ConsolePlugin: disabling it"; fi
+  done
+  $changed || return 0
+  $dry_run && return 0
+  oc --kubeconfig "$kc" patch consoles.operator.openshift.io cluster --type merge \
+    -p "$(python3 -c 'import json, sys; print(json.dumps({"spec": {"plugins": sys.argv[1:]}}))' ${keep[@]+"${keep[@]}"})" >/dev/null
+}
 load_plan() { # MODE OUTFILE: the saved plan if --plan-file has one, else a new plan (saved there)
   if [ -n "$plan_file" ] && [ -s "$plan_file" ]; then
     cp "$plan_file" "$2"
@@ -286,6 +326,9 @@ for x in json.load(sys.stdin)["items"]:
 
   say "site: webhooks left pointing at deleted namespaces"
   drop_dangling_webhooks "$site_kc"
+  say "site: operator leftovers outside the deleted namespaces (uninstall-leftovers.tsv)"
+  sweep_leftovers "$site_kc" site
+  drop_dangling_console_plugins "$site_kc"
 
   say "check: $site"
   $dry_run || check_admin "$site_kc" "$site" "$site_pw_file"
@@ -390,6 +433,9 @@ wait_gone "$hub_kc" 900 "GitOps namespaces" ns openshift-gitops openshift-gitops
 
 say "hub: webhooks left pointing at deleted namespaces"
 drop_dangling_webhooks "$hub_kc"
+say "hub: operator leftovers outside the deleted namespaces (uninstall-leftovers.tsv)"
+sweep_leftovers "$hub_kc" hub
+drop_dangling_console_plugins "$hub_kc"
 
 say "check: hub"
 $dry_run || check_admin "$hub_kc" hub "$pw_file"
