@@ -111,7 +111,14 @@ check_admin "$hub_kc" hub "$pw_file"
 # --- deleting -------------------------------------------------------------
 del() { # KUBECONFIG ARGS...
   local kc=$1; shift
-  if $dry_run; then echo "would delete: $*"; else oc --kubeconfig "$kc" delete "$@" --ignore-not-found --wait=false; fi
+  if $dry_run; then echo "would delete: $*"; return 0; fi
+  local out
+  # A kind whose CRD is already gone has no objects left (the ACM agent's removal takes its CRDs).
+  if ! out="$(oc --kubeconfig "$kc" delete "$@" --ignore-not-found --wait=false 2>&1)"; then
+    case "$out" in *"doesn't have a resource type"*) return 0 ;; esac
+    printf '%s\n' "$out" >&2; return 1
+  fi
+  [ -z "$out" ] || printf '%s\n' "$out"
 }
 wait_gone() { # KUBECONFIG SECONDS DESCRIPTION GET-ARGS...
   local kc=$1 secs=$2 what=$3; shift 3
@@ -207,6 +214,12 @@ for a in json.load(sys.stdin)["items"]:
         print(a["metadata"]["name"])' "$site")"
       [ -z "$left" ] && break; sleep 10
     done
+    say "hub: remove $site's Submariner add-on"
+    # Before the detach, so the add-on uninstalls Submariner while its operator runs;
+    # the detach alone removes the operator first and leaves Submariner's cleanup finalizers.
+    del "$hub_kc" managedclusteraddons.addon.open-cluster-management.io submariner -n "$site"
+    wait_gone "$hub_kc" 600 "$site's Submariner add-on" managedclusteraddons.addon.open-cluster-management.io submariner -n "$site"
+    wait_gone "$site_kc" 600 "Submariner on $site" ns submariner-operator
     say "hub: detach $site from ACM"
     del "$hub_kc" managedcluster "$site"
     wait_gone "$hub_kc" 900 "ManagedCluster $site" managedcluster "$site"
