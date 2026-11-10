@@ -45,9 +45,15 @@ there. *(Unverified.)*
 
 ## Remove a site
 
-1. Remove the AI Grid labels: `oc label managedcluster SITE ai-grid/enabled- ai-grid/role-`. The site's
-   Applications go within about two minutes; Submariner's stays until the ManagedCluster goes. *(Unverified on a
-   library-based hub.)*
+1. Remove the AI Grid label: `oc label managedcluster SITE ai-grid/enabled-`. Within about 30 seconds the hub
+   removes the site's `rhoai`, catalog and policy Applications, and the site's MaaSSubscriptions and MaaSModelRefs; the
+   `maas-db` replica goes about 3 minutes later. OpenShift AI and the model servers stay installed, no longer managed,
+   and the console shows the site as **Not added**. The site **stays in the grid**: its GridSite remains `Connected`
+   and `Available`, and withdrawing it isn't designed yet ([known gaps](appendix-c-gaps.md)). Submariner's
+   Application stays until the ManagedCluster goes.
+
+   To add the site back, label it again: on the tested hub all 29 Applications were Synced and Healthy 5½ minutes
+   later, with the site's models and subscriptions as before.
 2. To remove it from ACM too, delete the ManagedCluster, then any Argo CD cluster Secret and grid identity Secret
    (`redhat-ai-grid/grid-site-SITE`) left on the hub.
 3. To reuse the cluster, wipe it ([step 3, part 3](05-prepare-site.md#3-if-the-cluster-ran-ai-grid-before-wipe-it)).

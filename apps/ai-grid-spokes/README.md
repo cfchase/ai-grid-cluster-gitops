@@ -59,8 +59,9 @@ never removes.
 
 What goes and what stays:
 
-- Withdrawn: grid membership. `grid-bootstrap` reads the same label and
-  withdraws the site's peer records.
+- Not withdrawn: grid membership. The site's GridSite stays Connected and
+  Available after the label goes (seen on 2026-11-10); withdrawing a site
+  from the grid isn't designed yet.
 - Stays, unmanaged: OpenShift AI and everything the `rhoai` Application
   installed, and the provider gateway (both ApplicationSets set
   `preserveResourcesOnDeletion`), and the catalog's models.
