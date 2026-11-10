@@ -513,6 +513,10 @@ def admins():
     files = (chart or {}).get("helm", {}).get("valueFiles") or []
     if files != ["$values/cluster-config/values.yaml", "$deployment/values/cluster-admins.yaml"]:
         fail("cluster-config value files are %s" % files)
+    # Required: a missing or misspelled file would render no binding and prune
+    # every cluster-admin. A deployment that wants none ships cluster_admins: [].
+    if (chart or {}).get("helm", {}).get("ignoreMissingValueFiles"):
+        fail("cluster-config: values/cluster-admins.yaml must be required, not ignoreMissingValueFiles")
 
 
 OBJECT_STORAGE = os.path.join("apps", "object-storage")

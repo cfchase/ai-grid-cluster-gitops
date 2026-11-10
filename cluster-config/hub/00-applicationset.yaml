@@ -26,9 +26,10 @@ spec:
           path: cluster-config/chart
           helm:
             releaseName: cluster-admins
-            # The deployment's values/cluster-admins.yaml may be absent: then
-            # no binding is rendered.
-            ignoreMissingValueFiles: true
+            # The deployment's values/cluster-admins.yaml is required: a missing
+            # or misspelled file fails the sync instead of rendering no binding
+            # and pruning every cluster-admin. For none, it holds
+            # cluster_admins: [].
             valueFiles:
               - $values/cluster-config/values.yaml
               - $deployment/values/cluster-admins.yaml
