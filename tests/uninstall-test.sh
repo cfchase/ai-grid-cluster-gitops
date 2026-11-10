@@ -30,6 +30,7 @@ case "$*" in
   "get klusterlet klusterlet -o jsonpath="*) cat "$w.klusterlet" 2>/dev/null ;;
   "get klusterlet klusterlet") [ -s "$w.klusterlet" ] ;;
   get\ ns\ *) grep -qx "$3" "$w.ns" 2>/dev/null ;;
+  "get validatingwebhookconfigurations -o json") cat "$w.vwh" 2>/dev/null ;;
   get\ applicationsets.argoproj.io*) echo "applicationset.argoproj.io/apps" ;;
   get\ applications.argoproj.io\ -n\ openshift-gitops\ -o\ name) echo "application.argoproj.io/acm" ;;
   get\ secrets*) echo '{"items":[]}' ;;
@@ -99,4 +100,8 @@ if [ ! -e "$T/plan2.tsv" ]; then echo "   ok   a dry run doesn't write the plan 
 world; t "the site's Submariner add-on goes before the detach" 0 "would delete: managedclusteraddons.addon.open-cluster-management.io submariner -n site-b" --step site --dry-run "${HUB[@]}" "${SITE[@]}"
 world; printf 'acm\tMultiClusterHub.v1.operator.open-cluster-management.io\topen-cluster-management\tsaved-mch\n' > "$T/hubplan.tsv"
 t "the hub step reuses a saved plan file" 0 "would delete: MultiClusterHub.v1.operator.open-cluster-management.io saved-mch" --step hub --dry-run "${HUB[@]}" --plan-file "$T/hubplan.tsv"
+world; echo '{"items":[{"metadata":{"name":"dangling"},"webhooks":[{"clientConfig":{"service":{"namespace":"gone","name":"svc"}}}]},{"metadata":{"name":"alive"},"webhooks":[{"clientConfig":{"service":{"namespace":"keycloak","name":"svc"}}}]}]}' > "$T/hub.kc.vwh"; echo keycloak > "$T/hub.kc.ns"
+out=$(run --step hub --dry-run "${HUB[@]}"); total=$((total+1))
+if grep -q "would delete: validatingwebhookconfigurations dangling" <<<"$out" && ! grep -q "would delete: validatingwebhookconfigurations alive" <<<"$out"; then echo "   ok   only webhooks into deleted namespaces are dropped"
+else fails=$((fails+1)); echo "   FAIL only webhooks into deleted namespaces are dropped"; fi
 echo "uninstall tests: $((total-fails)) ok, $fails failed"; exit "$fails"

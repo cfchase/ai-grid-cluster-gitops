@@ -187,6 +187,23 @@ make_plan() { # MODE OUTFILE
   sed 's/^/  /' "$2"
 }
 
+drop_dangling_webhooks() { # KUBECONFIG: webhooks whose services all live in deleted namespaces
+  # Their failurePolicy is often Fail, so they'd reject writes a reinstall makes
+  # (proto-hub, 2026-11-10: ACM discovery, External Secrets, HyperShift).
+  local kc=$1 kind name nss ns live
+  for kind in validatingwebhookconfigurations mutatingwebhookconfigurations; do
+    { oc --kubeconfig "$kc" get "$kind" -o json 2>/dev/null || true; } | python3 -c '
+import json, sys
+raw = sys.stdin.read().strip()
+for w in (json.loads(raw) if raw else {}).get("items", []):
+    nss = {h["clientConfig"]["service"]["namespace"] for h in w.get("webhooks") or [] if h.get("clientConfig", {}).get("service")}
+    if nss: print(w["metadata"]["name"], " ".join(sorted(nss)))' | while read -r name nss; do
+      live=false
+      for ns in $nss; do oc --kubeconfig "$kc" get ns "$ns" >/dev/null 2>&1 && live=true; done
+      $live || del "$kc" "$kind" "$name"
+    done || true
+  done
+}
 load_plan() { # MODE OUTFILE: the saved plan if --plan-file has one, else a new plan (saved there)
   if [ -n "$plan_file" ] && [ -s "$plan_file" ]; then
     cp "$plan_file" "$2"
@@ -267,6 +284,9 @@ for x in json.load(sys.stdin)["items"]:
   sweep_ns "$site_kc" open-cluster-management-agent open-cluster-management-agent-addon submariner-operator \
     open-cluster-management-policies open-cluster-management "$site" ai-tenants redhat-ai-gateway-infra
 
+  say "site: webhooks left pointing at deleted namespaces"
+  drop_dangling_webhooks "$site_kc"
+
   say "check: $site"
   $dry_run || check_admin "$site_kc" "$site" "$site_pw_file"
   echo "== done$($dry_run && echo ' (dry run: nothing deleted)')"
@@ -343,6 +363,13 @@ sweep_ns "$hub_kc" default-broker submariner-operator openshift-cluster-observab
   ai-grid-internal-models redhat-ods-operator hive hypershift local-cluster
 
 say "OpenShift GitOps"
+# The operator recreates its default instance when it's deleted (proto-hub, 2026-11-10),
+# so tell it to stop and let it remove the instance, finalizer and cluster RBAC included.
+if $dry_run; then echo "would set DISABLE_DEFAULT_ARGOCD_INSTANCE=true on subscription openshift-gitops-operator"
+elif H get subscriptions.operators.coreos.com openshift-gitops-operator -n openshift-gitops-operator >/dev/null 2>&1; then
+  H patch subscriptions.operators.coreos.com openshift-gitops-operator -n openshift-gitops-operator --type merge \
+    -p '{"spec":{"config":{"env":[{"name":"DISABLE_DEFAULT_ARGOCD_INSTANCE","value":"true"}]}}}' >/dev/null
+fi
 for a in $(H get argocds.argoproj.io -A -o name 2>/dev/null); do del "$hub_kc" "$a" -n openshift-gitops; done
 wait_gone "$hub_kc" 600 "ArgoCD" argocds.argoproj.io -A
 csv="$(H get subscriptions.operators.coreos.com openshift-gitops-operator -n openshift-gitops-operator -o jsonpath='{.status.installedCSV}' 2>/dev/null || true)"
@@ -351,7 +378,18 @@ del "$hub_kc" subscriptions.operators.coreos.com openshift-gitops-operator -n op
 for ns in openshift-gitops openshift-gitops-operator; do
   if H get ns "$ns" >/dev/null 2>&1; then del "$hub_kc" ns "$ns"; fi
 done
+# If an instance outlived its operator, nothing runs its finalizer: drop it, and the
+# instance's cluster RBAC the finalizer would have removed.
+if ! $dry_run; then
+  for a in $(H get argocds.argoproj.io -A -o name 2>/dev/null); do
+    H patch "$a" -n openshift-gitops --type merge -p '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true
+  done
+  for r in $(H get clusterroles,clusterrolebindings -o name 2>/dev/null | grep -E '/openshift-gitops-' || true); do del "$hub_kc" "$r"; done
+fi
 wait_gone "$hub_kc" 900 "GitOps namespaces" ns openshift-gitops openshift-gitops-operator
+
+say "hub: webhooks left pointing at deleted namespaces"
+drop_dangling_webhooks "$hub_kc"
 
 say "check: hub"
 $dry_run || check_admin "$hub_kc" hub "$pw_file"

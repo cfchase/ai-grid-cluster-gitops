@@ -178,8 +178,11 @@ It refuses while any site is still managed. It:
 3. Deletes ACM's documented leftovers (admission APIServices and webhooks), then the namespaces that ACM's add-ons,
    the multicluster engine and the operators leave outside Argo CD's inventory, such as `default-broker`,
    `submariner-operator`, `external-secrets`, `hive` and `local-cluster`, each only if it's still there.
-4. Deletes OpenShift GitOps last.
-5. Signs in as the break-glass admin again.
+4. Deletes OpenShift GitOps last: it first tells the operator to stop recreating its default Argo CD instance
+   (`DISABLE_DEFAULT_ARGOCD_INSTANCE`), so the operator removes the instance itself.
+5. Deletes webhook configurations whose services all lived in namespaces the uninstall deleted. They'd reject a
+   reinstall's writes.
+6. Signs in as the break-glass admin again.
 
 A hub takes about 30 to 60 minutes; MultiClusterHub alone can take 20. *(Unverified.)*
 
