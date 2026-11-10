@@ -30,6 +30,8 @@ Checks, each reported as ok or FAIL:
                    (tests/library/templatepatch, needs Go), passes the
                    components checks; an input left out or left REQUIRED- fails
                    with "missing input: <name>"
+  deployment-values  per-cluster rhoai values and the grid's values (its CA
+                   mode) come from the deployment repository, not the library
 
 Run: bash tests/library/inputs-test.sh   (needs python3 with PyYAML, kustomize)
 """
@@ -398,6 +400,59 @@ def root_render(inputs):
             fail("an input %s must fail with 'missing input: libraryRevision', got %r" % (name, error))
 
 
+def load(path):
+    with open(os.path.join(ROOT, path)) as handle:
+        return yaml.safe_load(handle)
+
+
+def helm_source(sources, predicate):
+    return next((source for source in sources if predicate(source)), None)
+
+
+@check("deployment-values")
+def deployment_values():
+    """Per-cluster and grid values come from the deployment repository."""
+    appset = load("apps/rhoai/hub/01-applicationset.yaml")
+    sources = appset["spec"]["template"]["spec"]["sources"]
+    if not any(source.get("ref") == "deployment" for source in sources):
+        fail("apps/rhoai/hub/01-applicationset.yaml: no source with ref deployment")
+    site_file = "$deployment/values/clusters/{{ .name }}/rhoai.yaml"
+    for label, predicate in (("rhai-on-openshift", lambda s: (s.get("helm") or {}).get("releaseName") == "rhai-on-openshift"),
+                             ("gateway-hostname", lambda s: s.get("path") == "apps/rhoai/gateway-hostname")):
+        source = helm_source(sources, predicate)
+        helm = (source or {}).get("helm") or {}
+        files = helm.get("valueFiles") or []
+        if not files or files[-1] != site_file:
+            fail("rhoai %s: the last value file must be %s, got %s" % (label, site_file, files))
+        if any("values-{{" in item for item in files):
+            fail("rhoai %s: still reads per-cluster values from the library: %s" % (label, files))
+        if not helm.get("ignoreMissingValueFiles"):
+            fail("rhoai %s: an inference site has no per-cluster file; set ignoreMissingValueFiles" % label)
+    stray = [name for name in os.listdir(os.path.join(ROOT, "apps", "rhoai")) if re.match(r"values-.+\.yaml$", name)]
+    if stray:
+        fail("apps/rhoai holds per-cluster values: %s" % stray)
+    values = load("apps/rhoai/values.yaml")
+    annotations = values["components"]["aigateway"]["modelsAsAService"]["gateway"].get("annotations") or {}
+    if "ai-grid/maas-gateway-hostname-prefix" in annotations:
+        fail("apps/rhoai/values.yaml sets the MaaS gateway hostname prefix, a per-cluster value")
+
+    app = load("apps/grid-bootstrap/application.yaml")
+    sources = app["spec"]["sources"]
+    if not any(source.get("ref") == "deployment" for source in sources):
+        fail("apps/grid-bootstrap/application.yaml: no source with ref deployment")
+    chart = helm_source(sources, lambda s: "helm" in s)
+    files = (chart or {}).get("helm", {}).get("valueFiles") or []
+    if files != ["$values/apps/grid-bootstrap/values.yaml", "$deployment/values/grid-bootstrap.yaml"]:
+        fail("grid-bootstrap value files are %s" % files)
+    if (chart or {}).get("helm", {}).get("ignoreMissingValueFiles"):
+        fail("grid-bootstrap: the deployment's grid values are required, not optional")
+    ca = (load("apps/grid-bootstrap/values.yaml").get("external") or {}).get("certManager", {}).get("ca") or {}
+    if "mode" in ca or "secretName" in ca:
+        fail("apps/grid-bootstrap/values.yaml chooses the grid CA mode; the deployment states it")
+    if os.path.isfile(os.path.join(ROOT, ROOT_APPSET)) and "external.certManager.ca.mode" in load(ROOT_APPSET)["spec"]["templatePatch"]:
+        fail("the root's templatePatch sets the grid CA mode; the deployment states it")
+
+
 @check("bare-inputs")
 def bare_inputs():
     found = 0
@@ -423,6 +478,7 @@ def main():
     bare_inputs()
     root(inputs)
     root_render(inputs)
+    deployment_values()
     failed = sum(1 for _, ok in results if not ok)
     print("inputs tests: %d ok, %d failed" % (len(results) - failed, failed))
     return 1 if failed else 0
