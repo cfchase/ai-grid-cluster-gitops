@@ -12,8 +12,8 @@ What this release of the library doesn't do yet. Each is a candidate for a libra
 | The console can't create organizations on Red Hat build of Keycloak 26.4 or 26.6 | Organizations need community Keycloak 26.8.0 | Community Keycloak |
 | The library Keycloak's client secret shares a Secret with its admin password | The tenant Policy can read the admin password | Bring your own IdP with a dedicated Secret |
 | No bring-your-own MaaS database or Redis | Both run from the library | Use ours |
-| Withdrawing a site from the grid | Removing `ai-grid/enabled` stops managing the site and removes its tenant access, but its GridSite stays `Connected` and `Available` | Delete the ManagedCluster and wipe the site ([operate](09-operate.md#remove-a-site)) |
-| No uninstall procedure | Removing the root leaves everything in place | Wipe each site; rebuild the hub |
+| Withdrawing a site from the grid | Removing `ai-grid/enabled` stops managing the site and removes its tenant access, but its GridSite stays `Connected` and `Available` | Uninstall the site ([operate](09-operate.md#3-uninstall-each-site)) |
+| A hub that is also a site can't be uninstalled by the script | `uninstall.sh` refuses while `local-cluster` is labelled `ai-grid/enabled` | Unlabel it and wipe it by hand like a site, then run the hub step |
 | Hub sizing not established | | Size from the tested hub's components |
 | No GA catalog path | OpenShift AI installs from a pre-release catalog on `quay.io/rhoai`, and the mirror sends `registry.redhat.io/rhaii*` to `registry.stage.redhat.io` with `NeverContactSource`; both need early-access logins | Pre-release access from Red Hat ([OpenShift AI prerequisites](components/rhoai-prerequisites.md)); the GA path is undecided |
 | Redis counters can't be turned off | Every ingress site's Limitador is enforced onto the hub's Redis | Select `apps/limitador-redis` ([rate-limit counters](components/limitador-redis.md)) |

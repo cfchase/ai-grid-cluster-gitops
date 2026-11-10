@@ -103,7 +103,7 @@ All component pages: [components](components/README.md).
 6. [Step 4: join each site to the grid](06-join-grid.md)
 7. [Components in detail](components/README.md)
 8. [First use: deploy a model and call it](08-first-use.md)
-9. [Operate: upgrade, add and remove sites, rotate credentials](09-operate.md)
+9. [Operate: upgrade, add and remove sites, rotate credentials, uninstall](09-operate.md)
 10. [Troubleshooting](10-troubleshooting.md)
 
 Appendices: [A. Inputs and values reference](appendix-a-inputs.md) ·
