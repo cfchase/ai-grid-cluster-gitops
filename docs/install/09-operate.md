@@ -107,9 +107,11 @@ git rm -r -q -- $(git ls-files | grep -vx README.md)
 git commit -m "catalog: empty for uninstall" && git push origin HEAD:main && cd ..
 ```
 
-Wait until the models are gone from the sites, about 9 minutes
-([troubleshooting](10-troubleshooting.md#a-deleted-model-stays-on-the-site-for-several-minutes)). The site step
-deletes any that remain, while KServe still runs.
+Within a few minutes the hub deletes the catalog's Applications, and with them the subscriptions, auth policies and
+MaaS model entries, so no access outlives them. The models themselves keep running: the models ApplicationSet keeps
+its resources when a cluster's folder goes (`preserveResourcesOnDeletion`, see `apps/acm-models/README.md`). The
+site step deletes them first, while KServe still runs. On site-b both models were still running 13 minutes after
+the catalog was emptied.
 
 ### 2. Preview each step
 
