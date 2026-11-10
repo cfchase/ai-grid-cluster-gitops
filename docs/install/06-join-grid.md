@@ -72,6 +72,11 @@ arrives.
 
    You should see `Ready`.
 
+   On RHOAI 3.6 nightlies built after 2026-11-06, `KserveReady` can flap to `False` with
+   `modelcache: cleanup ... kserve-leader-election-role`, and the phase with it. Models keep serving. Check again, or
+   watch for a minute (`oc get datasciencecluster -w`); a site that returns to `Ready` is fine
+   ([troubleshooting](10-troubleshooting.md#kserveready-flaps-false-on-a-site)).
+
 2. The site is in the grid:
 
    ```sh

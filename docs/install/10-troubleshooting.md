@@ -66,6 +66,19 @@ site.
 **Fix:** set the realm's `unmanagedAttributePolicy` to `ADMIN_EDIT` through the admin API, as the example's
 `scripts/create-test-tenant.sh` does.
 
+## `KserveReady` flaps `False` on a site
+
+**Symptom:** the site's DataScienceCluster turns `Not Ready` for a while, with `KserveReady` `False` and a message
+naming `modelcache: cleanup` and Role `kserve-leader-election-role`; it returns to `Ready`, then flaps again. Models
+keep serving.
+
+**Cause:** a regression in the KServe module operator on RHOAI 3.6 nightlies built after 2026-11-06: it deletes and
+recreates its leader-election Role. Tracked as [RHOAIENG-103272](https://redhat.atlassian.net/browse/RHOAIENG-103272);
+upstream fix [opendatahub-io/kserve#2175](https://github.com/opendatahub-io/kserve/pull/2175).
+
+**Fix:** none needed; check twice or watch for a minute. Don't pin an older nightly to avoid it: that brings back the
+bug kserve#2171 fixed.
+
 ## A model's catalog Applications don't appear
 
 **Cause:** the catalog ApplicationSets' git generator didn't pick up the catalog's first commits.
