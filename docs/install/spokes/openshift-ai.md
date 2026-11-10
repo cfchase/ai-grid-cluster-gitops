@@ -5,6 +5,7 @@ that the library pins, and with it the operators OpenShift AI needs, including t
 Discovery on inference and combined sites. You select the component once, on the hub
 ([site delivery](../hub/06-site-delivery.md)); per site you choose the role and, for ingress and combined sites, the
 MaaS hostname prefix.
+The example deployment's one site is `combined`, CPU only: the GPU operators are subscribed, with no GPU model.
 
 ## OpenShift AI with MaaS
 
@@ -21,11 +22,7 @@ that runs MaaS. [Model delivery](../hub/05-console-and-model-delivery.md#model-d
 
 ### Use ours
 
-1. Add the component to the root's `files` list:
-
-   ```yaml
-   - path: apps/rhoai/application.yaml
-   ```
+1. Select `apps/rhoai/application.yaml` ([select it](../hub/06-site-delivery.md#select-it)).
 
    It reads the inputs `libraryRepoURL`, `libraryRevision`, `deploymentRepoURL`, `deploymentRevision` and all eight
    `idp*` inputs ([Appendix A](../appendix-a-inputs.md)). It needs [OpenShift AI prerequisites](../hub/06-site-delivery.md#registry-access-and-openshift-ai-prerequisites)
@@ -160,7 +157,7 @@ models without them.
 | Library component | None directly. [OpenShift AI](#openshift-ai-with-maas) (`apps/rhoai`) subscribes both operators on inference and combined sites; their configuration is yours |
 | Choices | Use ours (operators from `apps/rhoai`, configuration yours) · Bring your own · Skip (CPU-only sites) |
 
-Most of this page is unverified: the verified install ran a CPU model on a site without GPUs.
+Most of this section is unverified: the verified install ran a CPU model on a site without GPUs.
 
 ### Use ours
 

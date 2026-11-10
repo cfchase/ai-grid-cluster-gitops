@@ -40,7 +40,7 @@ The smallest grid is one combined site. A typical grid is one ingress site plus 
 | The grid operator and provider gateway; the models from the catalog | inference, combined | [OpenShift AI on each site](openshift-ai.md#openshift-ai-with-maas), [model delivery](../hub/05-console-and-model-delivery.md#model-delivery) |
 | Grid membership: the site's identity certificate and the `GridNetwork` | all | [Grid](../hub/02-grid.md#grid-bootstrap) |
 | A MaaS database replica, and the shared Redis for rate limits | ingress, combined | [MaaS shared services](../hub/03-maas-shared-services.md) |
-| Submariner, and ACM's search collector | every managed cluster | [ACM](../hub/01-acm.md) |
+| Submariner on every managed cluster; ACM's search collector on every site | every role | [ACM](../hub/01-acm.md) |
 | Cluster sign-in and admins, and the Submariner gateway node labels | every managed cluster | [Platform services](../hub/00-platform-services.md#cluster-sign-in-and-admins) |
 | Registry access (pull secret, image mirror) and the namespaces OpenShift AI needs | every managed cluster | [Site delivery](../hub/06-site-delivery.md#registry-access-and-openshift-ai-prerequisites) |
 

@@ -36,11 +36,7 @@ and subscriptions as commits to the catalog repository, which [model delivery](#
 
 ### Use ours
 
-1. Add the component to the root's `files` list:
-
-   ```yaml
-   - path: apps/console/application.yaml
-   ```
+1. Select `apps/console/application.yaml` ([select it](#select-it)).
 
    It reads the inputs `catalogRepoURL`, `catalogRevision`, `libraryRepoURL` and `libraryRevision`. It installs the
    console's Helm chart from `ai-grid-cloud/ai-grid-provider-console` at a pinned commit, with images by digest, into
@@ -166,11 +162,7 @@ report what it delivered.
 2. Set the inputs `catalogRepoURL` (the repository's URL) and `catalogRevision` (a branch, such as `main`, because the
    console pushes to it) in your root's `values`.
 
-3. Add the component to the root's `files` list:
-
-   ```yaml
-   - path: apps/acm-models/application.yaml
-   ```
+3. Select `apps/acm-models/application.yaml` ([select it](#select-it)).
 
    It also needs [spoke delivery](06-site-delivery.md#spoke-delivery) for its Placements and Argo CD cluster registration.
 
@@ -230,7 +222,7 @@ belong in the catalog. If you select it for a demo, add `- path: apps/acm-models
 
 ### Bring your own
 
-You can write the catalog yourself instead of through the console: commit files in the layout this page describes to
+You can write the catalog yourself instead of through the console: commit files in the layout that [Use ours](#use-ours-1) describes to
 the repository `catalogRepoURL` names. The AppProjects reject any other kind or namespace. A file that collides with
 an object another Application manages stops that site's catalog sync (`FailOnSharedResource`). *(Unverified.)*
 

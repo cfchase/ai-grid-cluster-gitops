@@ -46,7 +46,7 @@ your deployment repository, and the catalog. Every other component depends on it
 
 ### Use ours
 
-1. Install the operator and the root with the example deployment's
+1. Install the operator and the root with the library's
    [`scripts/bootstrap-hub.sh`](../../../scripts/bootstrap-hub.sh), described in
    [Prepare the hub](../03-prepare-hub.md). For OpenShift GitOps it does the following, from the library at the
    commit your root pins:
@@ -60,11 +60,7 @@ your deployment repository, and the catalog. Every other component depends on it
       `cluster-admin` to ServiceAccount `openshift-gitops/openshift-gitops-argocd-application-controller`.
    4. Applies your `root/` (the root ApplicationSet `apps`). From then on Argo CD follows git.
 
-2. Add the configuration component to the `files` list in your `root/kustomization.yaml`:
-
-   ```yaml
-   - path: apps/gitops-config/application.yaml
-   ```
+2. Select `apps/gitops-config/application.yaml` ([select it](#select-it)).
 
    It reads the `libraryRepoURL` and `libraryRevision` inputs and no file from your deployment repository. It
    server-side applies these fields onto ArgoCD `openshift-gitops`, and owns only them:
@@ -168,11 +164,7 @@ certificates on the sites. It's also the usual way to give the MaaS gateway a ce
 
 On the hub:
 
-1. Add the component to the `files` list in your `root/kustomization.yaml`:
-
-   ```yaml
-   - path: apps/cert-manager/application.yaml
-   ```
+1. Select `apps/cert-manager/application.yaml` ([select it](#select-it)).
 
    It reads the `libraryRepoURL` and `libraryRevision` inputs and no file from your deployment repository. It needs no
    Secret.
@@ -250,7 +242,7 @@ changes only the Subscription manifest, if the library changes it.
 ### Known issues
 
 None specific to cert-manager. The MaaS gateway's certificate issues are on the
-[MaaS gateway certificate](../spokes/maas-certificate.md#known-issues) page.
+[MaaS gateway certificate](../spokes/maas-certificate.md#known-issues) page, under Known issues.
 
 ## External Secrets Operator
 
@@ -278,11 +270,7 @@ rotated, and kept if the `ExternalSecret` goes.
 
 ### Use ours
 
-1. Add the component to the `files` list in your root's `kustomization.yaml`:
-
-   ```yaml
-   - path: apps/external-secrets/application.yaml
-   ```
+1. Select `apps/external-secrets/application.yaml` ([select it](#select-it)).
 
 It reads only `libraryRepoURL` and `libraryRevision`, no file from your deployment repository, and no Secret you create.
 It installs the Red Hat build of External Secrets Operator cluster-wide: namespace `external-secrets-operator`,
@@ -353,9 +341,8 @@ Add a local sign-in next to your cluster's existing identity providers before yo
 them, on the hub and on each site. If the identity provider you sign in with fails, this one still works. Never delete
 an existing identity provider your platform uses.
 
-The example deployment's
-the library's [`scripts/add-htpasswd-admin.sh`](../../../scripts/add-htpasswd-admin.sh)
-does this:
+The library's [`scripts/add-htpasswd-admin.sh`](../../../scripts/add-htpasswd-admin.sh) does this
+([prepare the hub](../03-prepare-hub.md#1-add-a-break-glass-admin)):
 
 ```sh
 ../library/scripts/add-htpasswd-admin.sh --kubeconfig KUBECONFIG --password-file PASSWORD_FILE
@@ -373,11 +360,7 @@ user `admin`, then waits until `admin` can sign in through the new provider. Use
 
 ### Use ours
 
-1. Add the component to the `files` list in your `root/kustomization.yaml`:
-
-   ```yaml
-   - path: cluster-config/application.yaml
-   ```
+1. Select `cluster-config/application.yaml` ([select it](#select-it)).
 
    It reads the `libraryRepoURL`, `libraryRevision`, `deploymentRepoURL` and `deploymentRevision` inputs.
 

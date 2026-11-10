@@ -1,7 +1,7 @@
 # Tenant identity
 
-The tenant identity provider (IdP) is the OIDC issuer that signs in organization users to the Org UI and to MaaS. Use
-the library's Keycloak, or any OIDC provider that meets the contract on this page.
+Organization users sign in through the tenant identity provider. Use the library's Keycloak, or any OIDC provider
+that meets [the contract](#bring-your-own).
 
 | | |
 |---|---|
@@ -18,14 +18,13 @@ For ours:
 ```
 
 For yours, select nothing from the library: run your IdP, or add it as your own app in your deployment repository's
-`apps/`, as the example does. Either way, the eight `idp*` inputs connect it to AI Grid
-([set every input](../02-repositories.md#4-set-every-input)).
+`apps/`, as the example does. Then set the `idp*` inputs ([set every input](../02-repositories.md#4-set-every-input)).
 
 ## Tenant identity provider
 
 The tenant identity provider (IdP) is the OIDC issuer that signs in organization users, to the Org UI and to MaaS: MaaS
 on every ingress or combined site validates its tokens and reads the user's organization and groups from them. Any
-OIDC provider that meets the contract on this page works. The provider console also creates organizations in it, which
+OIDC provider that meets the contract in [Bring your own](#bring-your-own) works. The provider console also creates organizations in it, which
 requires Keycloak with Organizations.
 
 | | |
@@ -39,7 +38,7 @@ nothing else about your IdP.
 
 ### Use ours
 
-The library's Keycloak (`apps/keycloak`) meets this contract. Its page, [Keycloak](#keycloak), gives the
+The library's Keycloak (`apps/keycloak`) meets this contract. [Keycloak](#keycloak) gives the
 components to select and the `idp*` values to set.
 
 ### Bring your own
@@ -110,7 +109,7 @@ the library pin; see [Keycloak](#upgrade-1).
 
 ### Known issues
 
-Keycloak-specific issues are on the [Keycloak](#known-issues-1) page.
+Keycloak-specific issues are in [Keycloak known issues](#known-issues-1).
 
 - **Symptom:** Every model call returns 403, "access denied to requested subscription".
   **Cause:** The token's groups are already prefixed with the organization ID, and MaaS drops them.
@@ -146,7 +145,7 @@ The verified install brought its own IdP instead, so every step in this section 
    - path: apps/keycloak/application.yaml
    ```
 
-   This page covers Keycloak on the hub only. `apps/keycloak-external-services` runs it on a site labelled
+   This section covers Keycloak on the hub only. `apps/keycloak-external-services` runs it on a site labelled
    `ai-grid/external-services=true` instead, but the tenant Policy reads the client Secret and the CA from the **hub**,
    so that layout also needs both copied to the hub, and the CA is that site's, not the hub's. It isn't covered here.
 2. Know what the default profile installs: `apps/keycloak/application.yaml` uses `overlays/default`, which adds two
@@ -186,7 +185,7 @@ curl -fsS "$(oc get route keycloak -n maas-db -o jsonpath='https://{.spec.host}'
 ```
 
 You should see the rollout complete and an issuer equal to your `idpIssuerURL`. Then run the token check on the
-[tenant identity provider](#bring-your-own) page.
+[tenant identity provider](#bring-your-own) section.
 
 ### Bring your own
 

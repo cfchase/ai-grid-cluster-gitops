@@ -44,12 +44,7 @@ components all select sites through these Placements.
 
 ### Use ours
 
-1. Add both components to the root's `files` list:
-
-   ```yaml
-   - path: apps/ai-grid-spokes/application.yaml
-   - path: apps/argo-registration/application.yaml
-   ```
+1. Select `apps/ai-grid-spokes/application.yaml` and `apps/argo-registration/application.yaml` ([select it](#select-it)).
 
    They read the inputs `libraryRepoURL` and `libraryRevision`, and no file from your deployment repository. Argo
    CD's `global` ManagedClusterSetBinding in `openshift-gitops` comes from `apps/gitops-config`
@@ -173,11 +168,7 @@ login once, on the hub, and this component delivers it and the mirror to every m
 
 ### Use ours
 
-1. Add the component to the root's `files` list in your deployment's `root/kustomization.yaml`:
-
-   ```yaml
-   - path: apps/rhoai-prerequisites/application.yaml
-   ```
+1. Select `apps/rhoai-prerequisites/application.yaml` ([select it](#select-it)).
 
    It reads the `libraryRepoURL` and `libraryRevision` inputs only, and no file from your deployment repository.
 

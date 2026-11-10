@@ -1,11 +1,11 @@
 # Grid bootstrap, enrollment and status policies
 
-The grid's hub side creates the grid: its ID, its certificate authority, and the enrollment that gives each site its
-identity and its `GridNetwork`. Status policies report each site's state back to the hub, for the provider console.
+The grid's hub side has two parts: grid bootstrap and enrollment, which create the grid and enrol each site, and the
+status policies, which report each site's state back to the hub for the provider console.
 
 | | |
 |---|---|
-| Options | No choice. You can bring the grid's CA ([bring your own](#bring-your-own)). |
+| Options | No choice. You can bring the grid's CA ([bring your own](#bring-your-own)), and skip the status policies only without the console ([skip](#skip-1)). |
 | Example chose | Ours: a new grid with a new CA (`Generate`) |
 | Requires | cert-manager ([platform services](00-platform-services.md#cert-manager)); [ACM](01-acm.md); the site Placements from [site delivery](06-site-delivery.md) |
 
@@ -33,11 +33,7 @@ every site, and so all cross-site routing, depends on it.
 
 ### Use ours
 
-1. Add the component to the root's `files` list:
-
-   ```yaml
-   - path: apps/grid-bootstrap/application.yaml
-   ```
+1. Select `apps/grid-bootstrap/application.yaml` ([select it](#select-it)).
 
    It reads the inputs `libraryRepoURL`, `libraryRevision`, `deploymentRepoURL` and `deploymentRevision`. It installs
    the `grid-enrollment` chart from `opendatahub-io/odh-gitops` at a commit the library pins, in external mode, with
@@ -150,11 +146,7 @@ reads them to show a cluster as Provisioning or Provisioned and a model or subsc
 
 ### Use ours
 
-1. Add the component to the root's `files` list:
-
-   ```yaml
-   - path: apps/ai-grid-policies/application.yaml
-   ```
+1. Select `apps/ai-grid-policies/application.yaml` ([select it](#select-it)).
 
    It reads the inputs `libraryRepoURL` and `libraryRevision`, and no file from your deployment repository. It binds
    its Policies to the Placements that [spoke delivery](06-site-delivery.md#spoke-delivery) creates in the same namespace, so select

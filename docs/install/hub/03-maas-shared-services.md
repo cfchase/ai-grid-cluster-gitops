@@ -34,11 +34,7 @@ site depends on it, and so does the library's Keycloak, which keeps its own data
 
 ### Use ours
 
-1. Add the component to the `files` list in your root's `kustomization.yaml`:
-
-   ```yaml
-   - path: apps/maas-db/application.yaml
-   ```
+1. Select `apps/maas-db/application.yaml` ([select it](#select-it)).
 
 2. Select [ACM](01-acm.md#red-hat-advanced-cluster-management) and `apps/argo-registration`. Replicas reach the primary through Submariner, and the
    ApplicationSet picks sites from Argo CD's cluster Secrets.
@@ -132,11 +128,7 @@ through a Submariner ServiceExport.
 
 ### Use ours
 
-1. Add the component to the `files` list in your root's `kustomization.yaml`:
-
-   ```yaml
-   - path: apps/limitador-redis/application.yaml
-   ```
+1. Select `apps/limitador-redis/application.yaml` ([select it](#select-it)).
 
 2. Select [ACM](01-acm.md#red-hat-advanced-cluster-management) (for Submariner) and `apps/rhoai-prerequisites`, whose Policy `rhoai-limitador-redis` points
    each site's Limitador at this Redis.

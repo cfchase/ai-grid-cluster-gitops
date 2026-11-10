@@ -1,7 +1,13 @@
 # Observability and usage logs
 
+Two components add AI Grid's dashboards and usage records on the hub. `apps/ai-grid-o11y` scrapes OpenShift AI metrics
+into ACM's Thanos, installs the Perses dashboards that the provider console's **Monitoring** page shows, and runs the
+LokiStack that stores MaaS usage logs; `apps/ai-grid-usage-logs` installs the Loki operator and tells every ingress or
+combined site where to send its usage records. Both depend on [ACM](01-acm.md#red-hat-advanced-cluster-management) observability.
+
 | | |
 |---|---|
+| Runs on | hub (sites forward usage records to it) |
 | Options | On · off |
 | Example chose | Off |
 | Requires | ACM with its observability ([ACM](01-acm.md)); ODF object storage on the hub; `apps/ai-grid-policies` ([grid](02-grid.md)) |
@@ -12,18 +18,6 @@
 - path: apps/ai-grid-o11y/application.yaml
 - path: apps/ai-grid-usage-logs/application.yaml
 ```
-
-
-Two components add AI Grid's dashboards and usage records on the hub. `apps/ai-grid-o11y` scrapes OpenShift AI metrics
-into ACM's Thanos, installs the Perses dashboards that the provider console's **Monitoring** page shows, and runs the
-LokiStack that stores MaaS usage logs; `apps/ai-grid-usage-logs` installs the Loki operator and tells every ingress or
-combined site where to send its usage records. Both depend on [ACM](01-acm.md#red-hat-advanced-cluster-management) observability.
-
-| | |
-|---|---|
-| Runs on | hub (sites forward usage records to it) |
-| Library component | `apps/ai-grid-o11y` (select `apps/ai-grid-o11y/application.yaml`) and `apps/ai-grid-usage-logs` (select `apps/ai-grid-usage-logs/application.yaml`) |
-| Choices | Use ours · Skip (what the verified install did) |
 
 The verified install skipped both, so every step on this page is *(Unverified.)*
 

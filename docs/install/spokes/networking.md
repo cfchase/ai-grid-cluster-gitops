@@ -62,11 +62,7 @@ your deployment repository, so changing it today means changing the library ([ga
 MetalLB is for bare-metal sites without a load-balancer provider. *(Unverified: the verified install ran on AWS
 without MetalLB.)* The [README](../../../apps/metallb/README.md) has the details.
 
-1. Add the component to the `files` list in your `root/kustomization.yaml`:
-
-   ```yaml
-   - path: apps/metallb/application.yaml
-   ```
+1. Select `apps/metallb/application.yaml` ([select it](../hub/01-acm.md#select-it)).
 
    It reads the `libraryRepoURL` and `libraryRevision` inputs. It creates ApplicationSet `metallb` on the hub, which
    does nothing until a cluster is labelled.

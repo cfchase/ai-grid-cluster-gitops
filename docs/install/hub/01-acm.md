@@ -37,11 +37,7 @@ provider console and the [observability](07-observability.md) components rely on
 
 ### Use ours
 
-1. Add the component to the `files` list in your root's `kustomization.yaml`:
-
-   ```yaml
-   - path: apps/acm/application.yaml
-   ```
+1. Select `apps/acm/application.yaml` ([select it](#select-it)).
 
 2. Provide object storage for ACM observability before you push: Secret `thanos-object-storage`, key `thanos.yaml`, in
    namespace `open-cluster-management-observability`. Select a library option or bring your own bucket; see
@@ -63,8 +59,7 @@ creates the following, in sync-wave order:
 | Observability | `MultiClusterObservability` `observability`: size `minimal`, 2 receive replicas, 7-day raw and 14-day downsampled retention, platform and user-workload metrics |
 | Submariner | `Broker` in `default-broker` with Globalnet, and ApplicationSet `acm-submariner`, which installs the Submariner add-on on every cluster registered in Argo CD, the hub included; see [Submariner](#submariner) |
 
-Submariner has its own page: [Submariner](#submariner) covers the gateway nodes and ports each site and the hub
-need.
+[Submariner](#submariner) covers the gateway nodes and ports each site and the hub need.
 
 #### Verify
 
@@ -116,7 +111,7 @@ updates install as Red Hat publishes them. A new minor version comes with a libr
 
 ### Known issues
 
-Submariner's known issues are on the [Submariner](#known-issues-1) page.
+Submariner's known issues are in [Submariner](#known-issues-1).
 
 ## Submariner
 
