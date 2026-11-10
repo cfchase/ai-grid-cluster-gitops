@@ -4,7 +4,8 @@
 #
 #   uninstall.sh --step site --hub-kubeconfig PATH --expect-hub-api URL \
 #                --site NAME --site-kubeconfig PATH --expect-site-api URL \
-#                --admin-password-file PATH [--admin-user admin] [--dry-run]
+#                --admin-password-file PATH [--site-admin-password-file PATH]
+#                [--admin-user admin] [--dry-run]
 #   uninstall.sh --step hub  --hub-kubeconfig PATH --expect-hub-api URL \
 #                --admin-password-file PATH [--admin-user admin] [--dry-run]
 #
@@ -27,7 +28,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 say() { printf '\n== %s\n' "$*"; }
 
-step="" hub_kc="" hub_api="" site="" site_kc="" site_api="" pw_file="" user=admin dry_run=false
+step="" hub_kc="" hub_api="" site="" site_kc="" site_api="" pw_file="" site_pw_file="" user=admin dry_run=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --step) step=$2; shift 2 ;;
@@ -37,6 +38,7 @@ while [ $# -gt 0 ]; do
     --site-kubeconfig) site_kc=$2; shift 2 ;;
     --expect-site-api) site_api=$2; shift 2 ;;
     --admin-password-file) pw_file=$2; shift 2 ;;
+    --site-admin-password-file) site_pw_file=$2; shift 2 ;;
     --admin-user) user=$2; shift 2 ;;
     --dry-run) dry_run=true; shift ;;
     -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -49,6 +51,7 @@ if [ "$step" = site ]; then
   [ -n "$site" ] && [ -n "$site_kc" ] && [ -n "$site_api" ] || die "--step site needs --site, --site-kubeconfig and --expect-site-api"
   [ "$site" != local-cluster ] || die "a hub that is also a site isn't supported yet: unlabel local-cluster, then run --step hub"
 fi
+site_pw_file="${site_pw_file:-$pw_file}"
 for c in oc python3 curl; do command -v "$c" >/dev/null || die "required command not found: $c"; done
 
 protect_ns="${WIPE_PROTECT_NAMESPACES:-}" protect_pkgs="${WIPE_PROTECT_PACKAGES:-}"
@@ -61,12 +64,12 @@ same_api() { [ "$(oc --kubeconfig "$1" whoami --show-server 2>/dev/null | sed 's
 same_api "$hub_kc" "$hub_api" || die "--hub-kubeconfig doesn't point at $hub_api"
 [ "$step" = hub ] || same_api "$site_kc" "$site_api" || die "--site-kubeconfig doesn't point at $site_api"
 
-check_admin() { # KUBECONFIG LABEL: the htpasswd admin signs in and keeps cluster-admin
-  local kc=$1 label=$2 oauth host
+check_admin() { # KUBECONFIG LABEL PASSWORD_FILE: the htpasswd admin signs in and keeps cluster-admin
+  local kc=$1 label=$2 pw=$3 oauth host
   oc --kubeconfig "$kc" get oauth cluster -o jsonpath='{range .spec.identityProviders[*]}{.type}{"\n"}{end}' |
     grep -qx HTPasswd || die "$label: no HTPasswd identity provider (run add-htpasswd-admin.sh first)"
   oauth="$(oc --kubeconfig "$kc" get route oauth-openshift -n openshift-authentication -o jsonpath='{.spec.host}')"
-  (umask 077; printf 'machine %s login %s password %s\n' "$oauth" "$user" "$(cat "$pw_file")" > "$tmp/netrc")
+  (umask 077; printf 'machine %s login %s password %s\n' "$oauth" "$user" "$(cat "$pw")" > "$tmp/netrc")
   host="$(curl -sS -o /dev/null -w '%{redirect_url}' --netrc-file "$tmp/netrc" -H 'X-CSRF-Token: 1' \
     "https://$oauth/oauth/authorize?client_id=openshift-challenging-client&response_type=token")"
   rm -f "$tmp/netrc"
@@ -97,8 +100,8 @@ for b in json.load(sys.stdin)["items"]:
 }
 
 say "checks"
-check_admin "$hub_kc" hub
-[ "$step" = hub ] || check_admin "$site_kc" "$site"
+check_admin "$hub_kc" hub "$pw_file"
+[ "$step" = hub ] || check_admin "$site_kc" "$site" "$site_pw_file"
 
 # --- deleting -------------------------------------------------------------
 del() { # KUBECONFIG ARGS...
@@ -203,7 +206,7 @@ for x in json.load(sys.stdin)["items"]:
   done
 
   say "check: $site"
-  $dry_run || check_admin "$site_kc" "$site"
+  $dry_run || check_admin "$site_kc" "$site" "$site_pw_file"
   echo "== done$($dry_run && echo ' (dry run: nothing deleted)')"
   exit 0
 fi
@@ -270,5 +273,5 @@ done
 wait_gone "$hub_kc" 900 "GitOps namespaces" ns openshift-gitops openshift-gitops-operator
 
 say "check: hub"
-$dry_run || check_admin "$hub_kc" hub
+$dry_run || check_admin "$hub_kc" hub "$pw_file"
 echo "== done$($dry_run && echo ' (dry run: nothing deleted)')"

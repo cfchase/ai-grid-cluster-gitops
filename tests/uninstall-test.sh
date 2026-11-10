@@ -79,4 +79,6 @@ total=$((total+1)); if grep -q stubtoken "$T/calls"; then fails=$((fails+1)); ec
 world; t "the site dry run plans the detach, then the site's objects" 0 "would delete: managedcluster site-b" --step site --dry-run "${HUB[@]}" "${SITE[@]}"
 world; t "a cluster-scoped object is deleted without a namespace" 0 "would delete: Namespace redhat-ods-applications\$" --step site --dry-run "${HUB[@]}" "${SITE[@]}"
 world; t "a namespaced object is deleted in its namespace" 0 "would delete: Cluster.v1.postgresql.cnpg.io maas-db -n maas-db" --step hub --dry-run "${HUB[@]}"
+world; echo hunter2-test > "$T/site-pw"; echo wrong > "$T/pw-hub-only"
+t "the site's own password file is used for the site" 1 "site-b: admin can't sign in" --step site --dry-run --hub-kubeconfig "$T/hub.kc" --expect-hub-api https://api.hub.example.com:6443 --admin-password-file "$T/pw" --site-admin-password-file "$T/pw-hub-only" "${SITE[@]}"
 echo "uninstall tests: $((total-fails)) ok, $fails failed"; exit "$fails"

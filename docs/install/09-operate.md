@@ -130,7 +130,8 @@ Replace the following:
 - `HUB_API_URL`, `SITE_API_URL`: each cluster's API URL, as `oc whoami --show-server` prints it.
 - `SITE`: the site's ManagedCluster name.
 - `ADMIN_PASSWORD_FILE`: the break-glass admin's password file ([step 1](03-prepare-hub.md#1-add-a-break-glass-admin)).
-  Use `--admin-user` if the user isn't `admin`. The same file must sign in on the hub and on the site.
+  Use `--admin-user` if the user isn't `admin`, and `--site-admin-password-file` if the site's admin password differs
+  from the hub's.
 
 The output lists every step and every object it would delete, in order, and the objects it keeps because they're
 protected. Read it: nothing protected may be in the delete list. Preview the hub the same way with `--step hub` and
