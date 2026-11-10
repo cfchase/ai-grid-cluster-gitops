@@ -122,8 +122,9 @@ spec:
   # - rhoai: grid-bootstrap owns the global binding
   #   (apps/grid-bootstrap/values.yaml, managedClusters.createClusterSetBinding).
   # Then every @<name>@ is replaced from the generator's values. An input the
-  # deployment didn't set fails the Application with "missing input: <name>"
-  # instead of creating it.
+  # deployment didn't set fails the Application with "missing input: <name>",
+  # and an empty value, or one with ", ', \ or @ (which would break the JSON or
+  # YAML it lands in), with "invalid input: <name>", instead of creating it.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "odf" }}
@@ -157,6 +158,7 @@ spec:
     {{- end }}
     {{- $json := toJson $spec }}
     {{- range $name, $value := $.values }}
+    {{- if or (eq $value "") (regexMatch `["'\\@]` $value) }}{{ fail (printf "invalid input: %s (empty, or contains \" ' \\ or @)" $name) }}{{ end }}
     {{- $json = replace (printf "@%s@" $name) $value $json }}
     {{- end }}
     {{- with regexFind "@[a-zA-Z]+@" $json }}{{ fail (printf "missing input: %s" (trimAll "@" .)) }}{{ end }}
