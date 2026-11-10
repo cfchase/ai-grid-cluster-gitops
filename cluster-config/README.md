@@ -10,7 +10,10 @@ Grants `cluster-admin` to a Git-managed list of users through per-user
 `ClusterRoleBinding` objects (`cluster-admin-<user>`). The list is per
 deployment: [`values.yaml`](values.yaml) leaves it empty, and a deployment
 lists its users in its own repository's `values/cluster-admins.yaml` (the
-`deploymentRepoURL` input). Without that file, the chart creates no binding. The `cluster-config`
+`deploymentRepoURL` input). The file is required: without it every cluster's
+`cluster-config` Application fails to sync, instead of rendering no binding and
+pruning every cluster-admin. A deployment that wants none ships
+`cluster_admins: []`. The `cluster-config`
 ApplicationSet generates one automated Application for every cluster secret
 created by the shared GitOpsCluster integration, including the hub.
 The hub uses Argo CD's in-cluster destination so the controller's

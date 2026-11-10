@@ -53,6 +53,7 @@ Read from `deploymentRepoURL` at `deploymentRevision`:
 
 - `values/cluster-admins.yaml`: `cluster_admins`, the users bound to
   `cluster-admin` on every cluster (`cluster-config`).
+  Required by `cluster-config`; `cluster_admins: []` for none.
 - `values/grid-bootstrap.yaml`: the grid's enrollment values, at least
   `external.certManager.ca.mode` (`Generate` for a new grid, `Existing` to keep
   a CA).
