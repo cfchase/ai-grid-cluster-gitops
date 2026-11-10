@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
-# Bootstrap a cluster to be managed by this repo
+# Bootstrap upstream's lab hub from this repository's legacy roots, which
+# predate inputs. A new hub installs from a deployment repository instead: it
+# takes bootstrap/hub as a remote base at a pinned commit and sets every input
+# (bootstrap/hub/README.md).
 # Per https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.22/html/installing_gitops/installing-openshift-gitops#installing-gitops-operator-using-cli_installing-openshift-gitops
 # BOOTSTRAP_PROFILE=dedicated-hub installs a hub that runs no Grid or RHOAI workloads.
 profile="${BOOTSTRAP_PROFILE:-}"

@@ -1,3 +1,5 @@
+# Predates inputs: upstream's self-syncing lab root, kept until the lab moves to a
+# deployment repository. A deployment uses bootstrap/hub instead.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
