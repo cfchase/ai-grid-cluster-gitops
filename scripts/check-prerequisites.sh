@@ -13,7 +13,7 @@
 #   --step spoke   a spoke before it joins ACM: OpenShift version and a default
 #                  StorageClass (the hub's policies deliver its pull secret)
 #   --expect-idp   the tenant IdP on this cluster: own (the deployment's own,
-#                  on the Red Hat build of Keycloak) checks the RHBK CRDs and
+#                  any OIDC provider) checks
 #                  the tenant Policy's two IdP inputs on this cluster: the
 #                  idpClientSecret* Secret (--idp-secret) and the idpCA*
 #                  ConfigMap (--idp-ca), each present with its key; both flags
@@ -97,11 +97,6 @@ if [ "$step" = hub ]; then
 fi
 
 if [ "$idp" = own ]; then
-  if crds_present keycloaks.k8s.keycloak.org keycloakrealmimports.k8s.keycloak.org; then
-    report OK "RHBK CRDs"
-  else
-    report MISSING "RHBK CRDs" "install the Red Hat build of Keycloak operator"
-  fi
   # The tenant Policy's hub templates read these by namespace, name and key.
   # The go-template prints "present" or nothing, never the value.
   has_key() { # kind NS/NAME:KEY
