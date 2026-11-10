@@ -162,9 +162,11 @@ A site takes about 20 to 40 minutes. *(Unverified.)*
 ### 4. Uninstall the hub
 
 ```sh
-../library/scripts/uninstall.sh --step hub \
+../library/scripts/uninstall.sh --step hub --plan-file hub-uninstall-plan.tsv \
   --hub-kubeconfig HUB_KUBECONFIG --expect-hub-api HUB_API_URL --admin-password-file ADMIN_PASSWORD_FILE
 ```
+
+As with a site, if the run stops partway, run the same command again with the same plan file.
 
 It refuses while any site is still managed. It:
 

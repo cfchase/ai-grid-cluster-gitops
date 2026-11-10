@@ -97,4 +97,6 @@ t "a saved plan file is reused" 0 "would delete: Cluster.v1.postgresql.cnpg.io s
 world; rm -f "$T/plan2.tsv"; run --step site --dry-run "${HUB[@]}" "${SITE[@]}" --plan-file "$T/plan2.tsv" >/dev/null; total=$((total+1))
 if [ ! -e "$T/plan2.tsv" ]; then echo "   ok   a dry run doesn't write the plan file"; else fails=$((fails+1)); echo "   FAIL a dry run wrote the plan file"; fi
 world; t "the site's Submariner add-on goes before the detach" 0 "would delete: managedclusteraddons.addon.open-cluster-management.io submariner -n site-b" --step site --dry-run "${HUB[@]}" "${SITE[@]}"
+world; printf 'acm\tMultiClusterHub.v1.operator.open-cluster-management.io\topen-cluster-management\tsaved-mch\n' > "$T/hubplan.tsv"
+t "the hub step reuses a saved plan file" 0 "would delete: MultiClusterHub.v1.operator.open-cluster-management.io saved-mch" --step hub --dry-run "${HUB[@]}" --plan-file "$T/hubplan.tsv"
 echo "uninstall tests: $((total-fails)) ok, $fails failed"; exit "$fails"

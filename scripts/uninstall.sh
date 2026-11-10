@@ -7,15 +7,15 @@
 #                --admin-password-file PATH [--site-admin-password-file PATH]
 #                [--plan-file PATH] [--admin-user admin] [--dry-run]
 #   uninstall.sh --step hub  --hub-kubeconfig PATH --expect-hub-api URL \
-#                --admin-password-file PATH [--admin-user admin] [--dry-run]
+#                --admin-password-file PATH [--plan-file PATH] [--admin-user admin] [--dry-run]
 #
 # --dry-run prints every step and every object it would delete, in order, and
 # deletes nothing. The object list comes from Argo CD's own inventory
 # (uninstall-plan.py); operators then remove what they created.
 #
-# --plan-file saves the site's plan on the first run and reuses it on a rerun.
-# The plan comes from the site's Applications on the hub, which the first run
-# removes, so a site step that stops partway can only resume with its plan file.
+# --plan-file saves the plan on the first run and reuses it on a rerun. The plan
+# comes from Argo CD's Applications, which the first run removes, so a step that
+# stops partway can only resume with its plan file.
 #
 # Safety:
 # - Refuses a cluster whose API URL isn't --expect-*-api.
@@ -187,6 +187,17 @@ make_plan() { # MODE OUTFILE
   sed 's/^/  /' "$2"
 }
 
+load_plan() { # MODE OUTFILE: the saved plan if --plan-file has one, else a new plan (saved there)
+  if [ -n "$plan_file" ] && [ -s "$plan_file" ]; then
+    cp "$plan_file" "$2"
+    echo "$(wc -l < "$2" | tr -d ' ') objects planned (saved in $plan_file by an earlier run):"
+    sed 's/^/  /' "$2"
+  else
+    make_plan "$1" "$2"
+    if [ -n "$plan_file" ] && ! $dry_run; then cp "$2" "$plan_file"; echo "plan saved to $plan_file"; fi
+  fi
+}
+
 # --- site -----------------------------------------------------------------
 if [ "$step" = site ]; then
   managed=false
@@ -197,14 +208,7 @@ if [ "$step" = site ]; then
   fi
 
   say "inventory of $site"
-  if [ -n "$plan_file" ] && [ -s "$plan_file" ]; then
-    cp "$plan_file" "$tmp/plan"
-    echo "$(wc -l < "$tmp/plan" | tr -d ' ') objects planned (saved in $plan_file by an earlier run):"
-    sed 's/^/  /' "$tmp/plan"
-  else
-    make_plan site "$tmp/plan"
-    if [ -n "$plan_file" ] && ! $dry_run; then cp "$tmp/plan" "$plan_file"; echo "plan saved to $plan_file"; fi
-  fi
+  load_plan site "$tmp/plan"
   admin_binding_kept "$site_kc" "$site" "$tmp/plan"
 
   if $managed; then
@@ -279,7 +283,7 @@ fi
   die "local-cluster is labelled ai-grid/enabled: a hub that is also a site isn't supported yet"
 
 say "inventory of the hub"
-make_plan hub "$tmp/plan"
+load_plan hub "$tmp/plan"
 admin_binding_kept "$hub_kc" hub "$tmp/plan"
 
 say "stop Argo CD (ApplicationSets orphan their Applications; Applications lose their finalizers)"
