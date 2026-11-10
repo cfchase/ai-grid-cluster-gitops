@@ -11,7 +11,7 @@ export HUB_CONTEXT=HUB_CONTEXT_NAME
 
 Replace `HUB_CONTEXT_NAME` with the hub's kubeconfig context. Run every command in this section from your deployment
 repository's checkout, with the library checked out at your pin in `../library`
-([section 2](02-repositories.md#2-pin-the-library-commit)).
+([repositories, part 2](02-repositories.md#2-pin-the-library-commit)).
 
 ## 1. Add a break-glass admin
 
@@ -32,7 +32,7 @@ You should see the script confirm the sign-in. Sign in once in the web console a
 
 ## 2. Check the infrastructure
 
-1. Use the library checkout at your pinned commit, `../library`, from [section 2](02-repositories.md#2-pin-the-library-commit).
+1. Use the library checkout at your pinned commit, `../library`, from the [repositories page](02-repositories.md#2-pin-the-library-commit).
 
 2. Run the hub check:
 
@@ -110,7 +110,7 @@ On an ACM hub, `oc get application` means ACM's kind; always write `applications
 
 You should see `deployment-root` `Synced`, and the ApplicationSet conditions with `ParametersGenerated=True` and no
 `ErrorOccurred=True`. A message `missing input: NAME` or `invalid input: NAME` means an input in your root
-([section 2](02-repositories.md#4-set-every-input)); fix it in git and push.
+([repositories, part 4](02-repositories.md#4-set-every-input)); fix it in git and push.
 
 ## Checkpoint
 

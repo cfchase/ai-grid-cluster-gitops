@@ -2,7 +2,7 @@
 
 ## Inputs
 
-The 14 inputs, with their meaning, examples and readers, are in [section 2](02-repositories.md#4-set-every-input).
+The 14 inputs, with their meaning, examples and readers, are in [the repositories page, part 4](02-repositories.md#4-set-every-input).
 Rules: every input is required, non-empty, and free of `"`, `'`, `\` and `@`. The library's `bootstrap/hub/README.md`
 documents the same contract for library maintainers.
 

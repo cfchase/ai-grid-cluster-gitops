@@ -30,18 +30,19 @@ to the sites.
         provider console
 ```
 
-## The four install steps
+## Follow these in order
 
-| Step | What happens | Time |
+| Page | What happens | Time |
 |---|---|---|
-| [1. Prepare the hub](03-prepare-hub.md) | Infrastructure checks, OpenShift GitOps, your root applied | 15 minutes |
-| [2. Install the hub components](04-hub-components.md) | Argo CD installs ACM, the grid bootstrap, the MaaS database, the console | 30 minutes |
-| [3. Prepare each site and join it to ACM](05-prepare-site.md) | Infrastructure checks, import into ACM | 15 minutes per site |
-| [4. Join each site to the grid](06-join-grid.md) | Labels install OpenShift AI in the site's role and enrol it | 45 to 60 minutes per site |
+| [Before you start](01-before-you-start.md) | Clusters, network, credentials and tools you need | 15 minutes |
+| [Create your deployment and catalog repositories](02-repositories.md) | Your component choices and inputs, the library pinned | 30 minutes |
+| [Step 1: prepare the hub](03-prepare-hub.md) | Infrastructure checks, OpenShift GitOps, your root applied | 15 minutes |
+| [Step 2: install the hub components](04-hub-components.md) | Argo CD installs ACM, the grid bootstrap, the MaaS database, the console | 30 minutes |
+| [Step 3: prepare each site and join it to ACM](05-prepare-site.md) | Infrastructure checks, import into ACM | 15 minutes per site |
+| [Step 4: join each site to the grid](06-join-grid.md) | Labels install OpenShift AI in the site's role and enrol it | 45 to 60 minutes per site |
+| [First use: deploy a model and call it](08-first-use.md) | A model from the provider console, a tenant calling it | 30 minutes |
 
-Before step 1, read [Before you start](01-before-you-start.md) and
-[create your deployment and catalog repositories](02-repositories.md). After step 4,
-[deploy a model and call it](08-first-use.md).
+"Step 1" to "step 4" in this guide always mean the four install pages in this table.
 
 ## Three repositories
 
@@ -63,7 +64,7 @@ Components come in three kinds:
 - **AI Grid itself:** always ours, configured by inputs.
 
 Fill in the following table before you start. Your "use ours" rows become the component list in your deployment
-repository ([step 3 of section 2](02-repositories.md#3-select-components)).
+repository ([repositories, part 3](02-repositories.md#3-select-components)).
 
 | Component | Runs on | Use ours (select) | Bring your own | Skip | Requires | Example chose |
 |---|---|---|---|---|---|---|
@@ -92,19 +93,12 @@ repository ([step 3 of section 2](02-repositories.md#3-select-components)).
 
 All component pages: [components](components/README.md).
 
-## Contents
+## Reference
 
-0. This overview
-1. [Before you start](01-before-you-start.md)
-2. [Create your deployment and catalog repositories](02-repositories.md)
-3. [Step 1: prepare the hub](03-prepare-hub.md)
-4. [Step 2: install the hub components](04-hub-components.md)
-5. [Step 3: prepare each site and join it to ACM](05-prepare-site.md)
-6. [Step 4: join each site to the grid](06-join-grid.md)
-7. [Components in detail](components/README.md)
-8. [First use: deploy a model and call it](08-first-use.md)
-9. [Operate: upgrade, add and remove sites, rotate credentials, uninstall](09-operate.md)
-10. [Troubleshooting](10-troubleshooting.md)
+Open these when a page sends you there, or after the install:
 
-Appendices: [A. Inputs and values reference](appendix-a-inputs.md) ·
-[B. The example deployment](appendix-b-example.md) · [C. Known gaps](appendix-c-gaps.md)
+- [Components in detail](components/README.md): one page per row of the preceding table.
+- [Operate](09-operate.md): upgrade, add and remove sites, rotate credentials, uninstall.
+- [Troubleshooting](10-troubleshooting.md).
+- Appendices: [A. Inputs and values reference](appendix-a-inputs.md) ·
+  [B. The example deployment](appendix-b-example.md) · [C. Known gaps](appendix-c-gaps.md)

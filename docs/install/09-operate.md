@@ -210,4 +210,4 @@ You should see that the Argo CD Application kind doesn't exist (`the server does
 namespace from the list, and your platform's identity providers plus `htpasswd`. Sign in once in the web console as the
 break-glass admin.
 
-To reinstall, start again at [section 2](02-repositories.md) with the same or new repositories.
+To reinstall, start again at [the repositories page](02-repositories.md) with the same or new repositories.

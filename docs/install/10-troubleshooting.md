@@ -6,7 +6,7 @@ Each entry gives the symptom, the cause and the fix. Component pages list more u
 
 **Cause:** your root's `values` don't set input `NAME`, or set it empty or with `"`, `'`, `\` or `@`.
 
-**Fix:** set it in `root/kustomization.yaml` ([section 2](02-repositories.md#4-set-every-input)), run
+**Fix:** set it in `root/kustomization.yaml` ([repositories, part 4](02-repositories.md#4-set-every-input)), run
 `../library/scripts/check-deployment.sh .`, and push. Read the message with
 `oc get applicationset apps -n openshift-gitops -o jsonpath='{.status.conditions}'`.
 
