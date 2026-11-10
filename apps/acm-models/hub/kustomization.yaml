@@ -1,5 +1,5 @@
 # A kustomization so apps/acm-models/application.yaml can hand it the library's
-# repository and revision (inputs.yaml).
+# repository and revision and the catalog repository and branch (inputs.yaml).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -51,4 +51,54 @@ replacements:
           kind: ApplicationSet
           name: acm-models-smollm2-135m-instruct
         fieldPaths:
+          - spec.template.spec.source.targetRevision
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.catalogRepoURL
+    targets:
+      - select:
+          kind: AppProject
+        fieldPaths:
+          - spec.sourceRepos.0
+      - select:
+          kind: ApplicationSet
+          name: acm-models-catalog-models
+        fieldPaths:
+          - spec.generators.0.matrix.generators.1.git.repoURL
+          - spec.template.spec.source.repoURL
+      - select:
+          kind: ApplicationSet
+          name: acm-models-catalog-ingress
+        fieldPaths:
+          - spec.generators.0.matrix.generators.1.git.repoURL
+          - spec.template.spec.source.repoURL
+      - select:
+          kind: ApplicationSet
+          name: acm-models-catalog-subscriptions
+        fieldPaths:
+          - spec.generators.0.matrix.generators.1.git.repoURL
+          - spec.template.spec.source.repoURL
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.catalogRevision
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: acm-models-catalog-models
+        fieldPaths:
+          - spec.generators.0.matrix.generators.1.git.revision
+          - spec.template.spec.source.targetRevision
+      - select:
+          kind: ApplicationSet
+          name: acm-models-catalog-ingress
+        fieldPaths:
+          - spec.generators.0.matrix.generators.1.git.revision
+          - spec.template.spec.source.targetRevision
+      - select:
+          kind: ApplicationSet
+          name: acm-models-catalog-subscriptions
+        fieldPaths:
+          - spec.generators.0.matrix.generators.1.git.revision
           - spec.template.spec.source.targetRevision
