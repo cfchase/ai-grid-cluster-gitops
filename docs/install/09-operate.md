@@ -30,7 +30,7 @@ An upgrade is one commit to your deployment repository that moves the library pi
 4. Rerun the checks from [step 4](06-join-grid.md#3-verify) and a tenant call from [first use](08-first-use.md#6-call-the-model-as-a-tenant).
 
 Before a pin that changes the Keycloak version, read
-[tenant identity provider](components/tenant-idp.md#known-issues): Keycloak's import-then-start layout can't migrate
+[Keycloak](components/keycloak.md#known-issues): Keycloak's import-then-start layout can't migrate
 an older database.
 
 ## Add a site
@@ -58,7 +58,7 @@ there. *(Unverified.)*
 |---|---|---|
 | Catalog token | Rerun `apps/console/create-secrets.sh` with the new token file ([provider console](components/console.md)). | No |
 | Tenant IdP client secret | Change it in the IdP, then update the hub Secret your `idpClientSecret*` inputs name; the tenant Policy copies it to the sites. | No |
-| `quay.io/rhoai` pull secret | Rerun `apps/rhoai-prerequisites/create-hub-secret.sh` ([pull secret](components/pull-secret.md)). | No |
+| `quay.io/rhoai` pull secret | Rerun `apps/rhoai-prerequisites/create-hub-secret.sh` ([OpenShift AI prerequisites](components/rhoai-prerequisites.md)). | No |
 
 ## Uninstall
 

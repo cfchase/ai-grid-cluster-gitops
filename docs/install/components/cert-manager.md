@@ -2,7 +2,8 @@
 
 cert-manager issues the certificates AI Grid creates for itself: the grid CA and each site's identity certificate
 (grid enrollment, `apps/grid-bootstrap`), the library Keycloak's signing keys, and OpenShift AI's monitoring
-certificates on the sites. It's also how you give the MaaS gateway a certificate your tenants trust.
+certificates on the sites. It's also the usual way to give the MaaS gateway a certificate your tenants trust; see
+[MaaS gateway certificate](./maas-certificate.md).
 
 | | |
 |---|---|
@@ -40,7 +41,7 @@ What uses it, and what each one creates:
 | Grid enrollment (`apps/grid-bootstrap`) | hub | Issuer `redhat-ai-grid/grid-ca` (CA from `values/grid-bootstrap.yaml`: `Generate` or `Existing`) and each site's identity Certificate |
 | Library Keycloak (`apps/keycloak`) | hub | Issuer `maas-db/keycloak-signing-selfsigned` and Certificate `keycloak-saas-signing` |
 | OpenShift AI monitoring | sites | OpenTelemetry certificates; [OpenShift AI prerequisites](./rhoai-prerequisites.md) grants the OpenTelemetry operator access |
-| MaaS gateway public certificate | ingress and combined sites | Yours: see [Known issues](#known-issues) |
+| MaaS gateway public certificate | ingress and combined sites | Yours: see [MaaS gateway certificate](./maas-certificate.md) |
 
 The library uses only namespaced Issuers. A ClusterIssuer is yours to provide, and you need one only for the MaaS
 gateway's public certificate.
@@ -74,7 +75,8 @@ the hub (v1.20.1) and on the combined site. The contract:
 - On each site, cert-manager runs in namespace `cert-manager` from the operator in `cert-manager-operator`, which is
   where the OpenShift AI chart and the OpenTelemetry grant expect it. A cert-manager installed another way (another
   namespace, an upstream Helm release) isn't covered. *(Unverified.)*
-- For the MaaS gateway: a ClusterIssuer that can issue for your sites' apps domains with a DNS-01 solver.
+- For the MaaS gateway: a ClusterIssuer that can issue for your sites' apps domains with a DNS-01 solver
+  ([MaaS gateway certificate](./maas-certificate.md)).
 
 Leave `apps/cert-manager` out of your `files` list. Check with the verify commands and:
 
@@ -94,25 +96,5 @@ changes only the Subscription manifest, if the library changes it.
 
 ## Known issues
 
-- **Symptom:** Tenants calling `https://maas.APPS_DOMAIN` get a certificate error: the MaaS gateway presents its
-  in-cluster service certificate.
-  **Cause:** The OpenShift AI chart terminates TLS on the MaaS gateway's HTTPS listener with a service CA
-  certificate. OpenShift points the gateway's hostname at the gateway's own load balancer, so a router Route can't
-  front it, and an HTTP-01 issuer can't solve the challenge through the gateway. The library has no input for this
-  certificate yet ([gaps](../appendix-c-gaps.md)).
-  **Workaround:** On each ingress or combined site, issue a certificate with a DNS-01 ClusterIssuer and point the
-  HTTPS listener at it, as the example deployment does for its site:
-  1. Add an app of your own that creates a `Certificate` in namespace `openshift-ingress` for `maas.APPS_DOMAIN`, with
-     `secretName: maas-gateway-public-tls`, delivered to the site (the example's
-     [`apps/site-b-maas-tls.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/apps/site-b-maas-tls.yaml)
-     and [`sites/site-b/maas-tls/certificate.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/sites/site-b/maas-tls/certificate.yaml)).
-  2. In `values/clusters/SITE/rhoai.yaml`, set the gateway's listeners, both of them, because Helm replaces lists
-     whole, with the `https` listener's `certificateRefs` naming `maas-gateway-public-tls`
-     ([example](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/values/clusters/site-b/rhoai.yaml)).
-
-  Replace `APPS_DOMAIN` with the site's apps domain and `SITE` with its ManagedCluster name. Use a certificate of its
-  own, not the router's wildcard, so browsers don't reuse one connection across hosts.
-- **Symptom:** The MaaS gateway also answers on port 80 in cleartext.
-  **Cause:** The chart's default `http` listener.
-  **Workaround:** None in the library yet. If you override the listeners, you can drop or restrict the `http` one.
-  *(Unverified.)*
+None specific to cert-manager. The MaaS gateway's certificate issues are on the
+[MaaS gateway certificate](./maas-certificate.md#known-issues) page.

@@ -90,4 +90,4 @@ community channel `stable` with automatic approval.
   **Workaround:** None needed. It turns Healthy after the first site joins.
 - **Symptom:** Limitador on a site can't reach Redis.
   **Cause:** Submariner between the hub and the site isn't connected.
-  **Workaround:** Check the Submariner add-on and the gateway ports; see [ACM](./acm.md#prepare-each-site-for-submariner).
+  **Workaround:** Check the Submariner add-on and the gateway ports; see [Submariner](./submariner.md).

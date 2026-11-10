@@ -1,15 +1,25 @@
 # OpenShift AI prerequisites
 
+> **Important:** This release installs pre-release OpenShift AI 3.6 builds. Every cluster pulls them from
+> `quay.io/rhoai`, and the image mirror the library delivers sends every `registry.redhat.io/rhaii*` image, model
+> runtimes included, to `registry.stage.redhat.io` with `NeverContactSource`. You need logins for both registries,
+> which Red Hat gives only to early-access partners; ask your Red Hat contact. Without a stage login, model images fail
+> to pull on every site. What changes at general availability (the catalog source, the mirror, which logins you need)
+> isn't decided in the library yet ([known gaps](../appendix-c-gaps.md)).
+
 This component delivers, through ACM Policies on the hub, what every managed cluster needs before OpenShift AI installs
 there: protected namespaces, the model namespace and its NetworkPolicies, the image mirror, the catalog pull secret and
-the merged cluster pull secret. [OpenShift AI](./rhoai.md), [model delivery](./model-delivery.md) and the shared
-Limitador counters (`apps/limitador-redis`) depend on it.
+the merged cluster pull secret. OpenShift AI 3.6 pre-release builds come from `quay.io/rhoai`, which needs a login, and
+their images keep their `registry.redhat.io` names, so every cluster needs that login and an image mirror. You give the
+login once, on the hub, and this component delivers it and the mirror to every managed cluster.
+[OpenShift AI](./rhoai.md), [model delivery](./model-delivery.md), every model image and the shared Limitador counters
+(`apps/limitador-redis`) depend on it.
 
 | | |
 |---|---|
-| Runs on | hub (Policies); delivered to every managed cluster in the `global` cluster set |
-| Library component | `apps/rhoai-prerequisites` (select `apps/rhoai-prerequisites/application.yaml`) |
-| Choices | Use ours. Bring your own and Skip aren't options. |
+| Runs on | hub (Policies and the registry credential); delivered to every managed cluster in the `global` cluster set, the hub included |
+| Library component | `apps/rhoai-prerequisites` (select `apps/rhoai-prerequisites/application.yaml`); the registry credential is infrastructure you provide |
+| Choices | Use ours. Bring your own applies only to the registry credentials. Skip isn't an option. |
 
 ## Use ours
 
@@ -21,10 +31,43 @@ Limitador counters (`apps/limitador-redis`) depend on it.
 
    It reads the `libraryRepoURL` and `libraryRevision` inputs only, and no file from your deployment repository.
 
-2. Create the hub Secret that holds the registry credentials. The [pull secret](./pull-secret.md) page explains which
-   login you need and how to create it with `apps/rhoai-prerequisites/create-hub-secret.sh`. The result is Secret
-   `rhoai-prerequisites/rhoai-quay-pull-secret` with key `.dockerconfigjson`. Until it exists, the pull-secret Policy
-   renders nothing and changes no cluster; the image mirror is delivered anyway.
+2. Get a `quay.io` login that can pull the `quay.io/rhoai` repositories. Prefer a robot account scoped to
+   `quay.io/rhoai`. Sign in with it so your container auth file holds a `quay.io/rhoai` entry:
+
+   ```sh
+   podman login quay.io/rhoai
+   ```
+
+3. Add a `registry.stage.redhat.io` login to the same auth file before you run the bootstrap script:
+   `podman login registry.stage.redhat.io`. The mirror sends every `registry.redhat.io/rhaii*` image, model runtimes
+   included, there and never contacts the source, so every site needs it. `bootstrap-hub.sh` passes it to
+   `create-hub-secret.sh` as `RHOAI_STAGE_PULL_SECRET`, and warns when the auth file has none. *(Unverified: the
+   tested site already had the model image.)*
+
+4. Run the library's [`scripts/bootstrap-hub.sh`](../../../scripts/bootstrap-hub.sh) with the auth file, from your
+   deployment checkout:
+
+   ```sh
+   KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=AUTH_FILE ../library/scripts/bootstrap-hub.sh --deployment .
+   ```
+
+   Replace the following:
+
+   - `HUB_KUBECONFIG`: a kubeconfig with a `cluster-admin` session on the hub.
+   - `AUTH_FILE`: your container auth file, such as `${XDG_RUNTIME_DIR}/containers/auth.json` or
+     `~/.config/containers/auth.json`.
+
+   The script reads the `quay.io/rhoai` entry, never prints it, and runs the library's
+   [`create-hub-secret.sh`](../../../apps/rhoai-prerequisites/create-hub-secret.sh). That creates Secret
+   `rhoai-prerequisites/rhoai-quay-pull-secret` (type `kubernetes.io/dockerconfigjson`, key `.dockerconfigjson`)
+   on the hub. Nothing goes into git.
+
+   If your auth file has only a general `quay.io` login, the script stops. To use that login anyway, set
+   `RHOAI_QUAY_ALLOW_GENERIC_LOGIN=1`. The hub Secret then holds your general `quay.io` credential, although the
+   Policy writes it to each cluster only as a `quay.io/rhoai` entry.
+
+   Until the hub Secret exists, the pull-secret Policy renders nothing and changes no cluster; the image mirror is
+   delivered anyway.
 
 Argo CD creates namespace `rhoai-prerequisites` on the hub, a `global` ManagedClusterSetBinding, Placements and these
 Policies:
@@ -37,10 +80,18 @@ Policies:
 | `rhoai-otel-cert-manager-compat` | AI Grid sites | Temporary cert-manager permissions for the OpenTelemetry operator |
 | `rhoai-metrics-addon`, `rhoai-metrics-network` | hub; AI Grid sites | Metrics add-on registration; NetworkPolicy admitting ACM's agents to the collector on port 8889 |
 
-The pull-secret merge keeps every credential the cluster already has. A bare `quay.io` entry in the hub Secret lands
-only as `quay.io/rhoai`, so the cluster's own `quay.io` login stays. Changing the cluster pull secret or the mirror
-makes the Machine Config Operator roll every node once, so expect each new cluster's nodes to reboot after it joins
-ACM.
+The registry pieces of the `rhoai-prerequisites` Policy:
+
+- Secret `openshift-marketplace/rhoai-catalog-pull-secret`, for the OpenShift AI catalog image.
+- The hub Secret's registries merged into `openshift-config/pull-secret`. Existing entries stay; the hub's win for
+  the registries it holds. A bare `quay.io` entry in the hub Secret lands only as `quay.io/rhoai`, so the cluster's own
+  `quay.io` login stays.
+- ImageDigestMirrorSet `quay-registry`: `registry.redhat.io/rhoai` from `quay.io/rhoai`, and
+  `registry.redhat.io/rhaii`, `rhaii-early-access` and `rhaii-fast` from `registry.stage.redhat.io`, all with
+  `mirrorSourcePolicy: NeverContactSource`.
+
+Delivering the mirror reboots each cluster's nodes once: the Machine Config Operator rolls the change out node by
+node. Plan for it when a cluster joins ACM, the hub included. Pull secret updates roll out without a reboot.
 
 The [README](../../../apps/rhoai-prerequisites/README.md) has the details, including the OpenTelemetry workaround.
 
@@ -60,36 +111,66 @@ Replace `SITE` with the ManagedCluster name of a site.
 You should see Secret type `kubernetes.io/dockerconfigjson`, and each Policy `Compliant`. A cluster's
 `rhoai-prerequisites` Policy stays `NonCompliant` while its nodes roll out the new pull secret.
 
-On the site, check that the namespaces and the mirror exist:
+On the site, check the namespaces, the mirror and the pull secret, without showing any credential:
 
 ```sh
-oc get namespace redhat-ai-grid redhat-ods-operator ai-grid-internal-models
-oc get imagedigestmirrorset quay-registry
-oc get mcp
+oc --context SITE_CONTEXT get namespace redhat-ai-grid redhat-ods-operator ai-grid-internal-models
+oc --context SITE_CONTEXT get imagedigestmirrorset quay-registry
+oc --context SITE_CONTEXT -n openshift-config get secret pull-secret \
+  -o go-template='{{index .data ".dockerconfigjson" | base64decode}}' | jq -r '.auths | keys[]'
+oc --context SITE_CONTEXT get machineconfigpool
 ```
 
-You should see the three namespaces `Active`, the mirror present, and every MachineConfigPool `UPDATED=True`.
+Replace `SITE_CONTEXT` with your kubeconfig context for a site.
+
+You should see the three namespaces `Active`, the mirror present, `quay.io/rhoai` among the registry names (the
+command prints names only), and every MachineConfigPool `UPDATED` `True` once the rollout finishes.
 
 ## Bring your own
 
-Not an option: the OpenShift AI and model components rely on the namespaces, NetworkPolicies and RBAC these Policies
-create, by name. You can supply the credentials another way: if every cluster's `openshift-config/pull-secret`
-already holds a `quay.io/rhoai` login and each cluster has its own `openshift-marketplace/rhoai-catalog-pull-secret`,
-leave the hub Secret out and the pull-secret Policy changes nothing. *(Unverified.)*
+The namespaces, NetworkPolicies and RBAC aren't replaceable: the OpenShift AI and model components rely on them by
+name. You can supply the registry credentials another way. Two cases:
+
+- **You create the hub Secret yourself.** Create `rhoai-prerequisites/rhoai-quay-pull-secret`, type
+  `kubernetes.io/dockerconfigjson`, whose `.dockerconfigjson` has an `auths` entry `quay.io/rhoai` or `quay.io`, and
+  optionally other registries. Use `create-hub-secret.sh` with `RHOAI_QUAY_PULL_SECRET` (base64 of
+  `USERNAME:PASSWORD`) read from the terminal, so the value isn't in your shell history:
+
+  ```sh
+  read -s RHOAI_QUAY_PULL_SECRET && export RHOAI_QUAY_PULL_SECRET
+  HUB_CONTEXT=HUB_CONTEXT bash LIBRARY_CHECKOUT/apps/rhoai-prerequisites/create-hub-secret.sh
+  ```
+
+  Replace `HUB_CONTEXT` with your hub's kubeconfig context and `LIBRARY_CHECKOUT` with a checkout of the library at
+  your pinned commit.
+
+- **Your clusters already have the credentials and mirror** (for example, a disconnected install with its own mirror
+  registry). If every cluster's `openshift-config/pull-secret` already holds a `quay.io/rhoai` login and each cluster
+  has its own `openshift-marketplace/rhoai-catalog-pull-secret`, leave the hub Secret out and the pull-secret Policy
+  changes nothing. *(Unverified.)* The Policy still delivers ImageDigestMirrorSet `quay-registry`, which can conflict
+  with your own mirrors. The library has no switch to turn it off. *(Unverified.)*
 
 ## Skip
 
-You can't skip it. Without it, OpenShift AI can't pull its catalog or bundles, and models have no namespace to run in.
+You can't skip it. While the library installs OpenShift AI 3.6 pre-release builds, without the login the catalog image
+and operator bundles don't pull, and OpenShift AI never installs on any site. Without the namespaces, models have no
+namespace to run in.
 
 ## Upgrade
 
-The component moves with the library pin and needs no manual step. Rotating the registry login means rerunning
-`create-hub-secret.sh`; the Policy then merges the new credential, and the nodes roll once more. Removing the hub
-Secret never deletes a pull secret already delivered to a cluster.
+The component, the mirror and the Policies move with the library pin and need no manual step. To rotate the
+credential, run `create-hub-secret.sh` again; ACM copies the new value to every cluster, and the hub's value wins over
+the old one. Deleting the hub Secret doesn't remove credentials already on the clusters.
 
 ## Known issues
 
-**Symptom:** a new site's nodes reboot shortly after it joins ACM.
-**Cause:** the merged pull secret and the ImageDigestMirrorSet are node configuration, which the Machine Config
-Operator applies by draining and rebooting each node.
-**Workaround:** none needed; wait for every MachineConfigPool to report `UPDATED=True` before you label the site.
+- **Symptom:** The bootstrap script reports `quay.io/rhoai pull secret file` `MISSING` from the prerequisites check,
+  then succeeds.
+  **Cause:** `scripts/check-prerequisites.sh` looks for `RHOAI_QUAY_PULL_SECRET_FILE`; the example script uses
+  `RHOAI_QUAY_AUTH_FILE`.
+  **Workaround:** Ignore that line during bootstrap, or export both variables with the same path.
+- **Symptom:** A site's nodes go `SchedulingDisabled` and reboot one by one soon after it joins ACM.
+  **Cause:** The image mirror's Machine Config rollout: the Machine Config Operator applies the ImageDigestMirrorSet by
+  draining and rebooting each node.
+  **Workaround:** None needed; wait for every MachineConfigPool to report `UPDATED` `True` before you label the site.
+  Removing the mirror later reboots the nodes again.

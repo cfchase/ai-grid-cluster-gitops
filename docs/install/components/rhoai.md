@@ -41,10 +41,8 @@ that runs MaaS. [Model delivery](./model-delivery.md), [AI Grid Policies](./ai-g
    - `HOSTNAME_PREFIX`: the first label of the MaaS host name. Tenants call `https://HOSTNAME_PREFIX.APPS_DOMAIN`,
      where `APPS_DOMAIN` is the site's ingress domain. The example deployment uses `maas`.
 
-   An `inference` site needs no file. To give the MaaS gateway a publicly trusted certificate, add the HTTPS listener
-   override from the example's
-   [`values/clusters/site-b/rhoai.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/values/clusters/site-b/rhoai.yaml)
-   to the same file (see [Known issues](#known-issues)).
+   An `inference` site needs no file. To give the MaaS gateway a publicly trusted certificate, add an HTTPS listener
+   override to the same file; see [MaaS gateway certificate](./maas-certificate.md).
 
 3. Create the two hub objects the `idp*` inputs name: the Secret holding the tenant client's secret, and the
    ConfigMap holding the CA that signs the issuer's certificate. [Tenant identity provider](./tenant-idp.md) covers both. The
@@ -124,20 +122,8 @@ with no manual step; the `ai-grid/library-revision` label shows when each site h
 **Cause:** the site is ingress or combined and has no `values/clusters/SITE/rhoai.yaml` with the hostname prefix.
 **Workaround:** add the file (step 2) and push it; the Application renders on its next refresh.
 
-**Symptom:** tenants' TLS clients reject `https://HOSTNAME_PREFIX.APPS_DOMAIN`.
-**Cause:** the MaaS gateway presents its in-cluster service certificate. OpenShift points the host name at the
-gateway's own load balancer, so a router Route can't front it, and an HTTP-01 issuer can't solve the challenge. The
-library has no input for this certificate yet ([Appendix C](../appendix-c-gaps.md)).
-**Workaround:** deliver a cert-manager `Certificate` from a DNS-01 issuer to the site's `openshift-ingress` namespace,
-with your own Application (the example's
-[`sites/site-b/maas-tls/`](https://github.com/cfchase/ai-grid-deployment-proto/tree/main/sites/site-b/maas-tls) and
-`apps/site-b-maas-tls.yaml`). Then point the HTTPS listener at its Secret in `values/clusters/SITE/rhoai.yaml`, listing
-both listeners as the example does.
-
-**Symptom:** MaaS answers on `http://HOSTNAME_PREFIX.APPS_DOMAIN` (port 80) in cleartext.
-**Cause:** the chart's default HTTP listener serves the same routes as HTTPS.
-**Workaround:** none in the library yet. Block port 80 at your load balancer or network if your policy requires it.
-*(Unverified.)*
+MaaS gateway certificate errors and the cleartext port 80 listener are on the
+[MaaS gateway certificate](./maas-certificate.md#known-issues) page.
 
 **Symptom:** tenant calls fail with 401 or 503 after the IdP was down or rotated its keys, though the IdP is back.
 **Cause:** Authorino cached the failed OIDC discovery.

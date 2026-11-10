@@ -15,7 +15,7 @@ What uses it:
 | Component | What it generates |
 |---|---|
 | [Object storage](./object-storage.md), S4 option (`apps/object-storage/s4`) | The S3 access and secret keys and `thanos.yaml` in Secret `open-cluster-management-observability/thanos-object-storage` |
-| [Tenant IdP](./tenant-idp.md), library Keycloak (`apps/keycloak`) | Keycloak's admin, client, broker, test-user and database passwords, and its keystore password, in namespace `maas-db` |
+| [Keycloak](./keycloak.md) (`apps/keycloak`), the library's tenant IdP | Keycloak's admin, client, broker, test-user and database passwords, and its keystore password, in namespace `maas-db` |
 | [External services](../../../apps/external-services/README.md) | Installs this operator again on the cluster labelled `ai-grid/external-services=true` |
 | Your own apps | The worked example's tenant IdP generates its client secret in a dedicated namespace and copies it to Keycloak's namespace with a `kubernetes` `SecretStore` |
 

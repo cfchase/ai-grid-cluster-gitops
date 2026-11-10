@@ -71,12 +71,13 @@ bash ../library/scripts/check-prerequisites.sh --step spoke --context "$SITE_CON
 
 You should see `OK` for `OpenShift 4.21 or later` and `default StorageClass`. The hub delivers the rest: the
 `quay.io/rhoai` pull secret and image mirror arrive by Policy once the site is imported, and the site's nodes reboot once
-for the mirror ([pull secret](components/pull-secret.md)).
+for the mirror ([OpenShift AI prerequisites](components/rhoai-prerequisites.md)).
 
 Also check, for every role:
 
 - Two worker nodes can run Submariner gateways, and the site can open a LoadBalancer Service for them, with UDP 4500 and
-  4490 allowed ([ACM](components/acm.md)). `cluster-config` labels the gateway nodes.
+  4490 allowed ([Submariner](components/submariner.md)). `cluster-config` labels the gateway nodes, except on compact
+  clusters and single-node OpenShift.
 - `dig AAAA router-default.apps.CLUSTER_DOMAIN` doesn't return `NXDOMAIN`.
 - On inference and combined sites with GPUs: see [GPU operator and NFD](components/gpu-operator.md).
 

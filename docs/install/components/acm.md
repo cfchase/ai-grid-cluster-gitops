@@ -37,26 +37,10 @@ creates the following, in sync-wave order:
 | Governance add-ons | ClusterManagementAddOns `governance-policy-framework`, `config-policy-controller` and `governance-standalone-hub-templating`, installed on every cluster in ManagedClusterSet `global` through Placement `policy-addons-clusters` |
 | Search collector | Policy `search-collector` creates the `search-collector` add-on on every managed cluster except the hub and clusters that have a `KlusterletAddonConfig`. The console's backend reads a site's GPUs and MaaS subscriptions through Search. |
 | Observability | `MultiClusterObservability` `observability`: size `minimal`, 2 receive replicas, 7-day raw and 14-day downsampled retention, platform and user-workload metrics |
-| Submariner | `Broker` in `default-broker` with Globalnet (`242.0.0.0/8`), and ApplicationSet `acm-submariner`, which installs the Submariner add-on with 2 gateways behind a LoadBalancer Service on every cluster registered in Argo CD, the hub included |
+| Submariner | `Broker` in `default-broker` with Globalnet, and ApplicationSet `acm-submariner`, which installs the Submariner add-on on every cluster registered in Argo CD, the hub included; see [Submariner](./submariner.md) |
 
-### Prepare each site for Submariner
-
-Submariner connects the hub and the sites so the sites reach the hub's database and Redis through
-`*.svc.clusterset.local` names. On each site, and on the hub:
-
-1. Make sure two nodes can act as gateways (the component asks for `gateways: 2`). Check which nodes carry the gateway
-   label:
-
-   ```sh
-   oc --context CLUSTER_CONTEXT get nodes -l submariner.io/gateway=true
-   ```
-
-   If none are listed after the add-on installs, label two worker nodes `submariner.io/gateway=true`. *(Unverified.)*
-2. Allow the Submariner tunnel traffic to the gateways' load balancer: UDP 4500 (IPsec NAT traversal) and UDP 4490
-   (NAT discovery), from every other cluster in the grid. ACM can't open cloud ports for you unless it has cloud
-   credentials for the cluster. *(Unverified.)*
-
-Replace `CLUSTER_CONTEXT` with the kubeconfig context of the site or hub.
+Submariner has its own page: [Submariner](./submariner.md) covers the gateway nodes and ports each site and the hub
+need.
 
 ### Verify
 
@@ -70,7 +54,7 @@ oc get applications.argoproj.io -n openshift-gitops | grep acm
 
 You should see `2.17.x Running`, `True`, `Compliant`, one `search-collector` add-on per site, one `submariner` add-on
 per cluster, and Applications `acm` and `acm-submariner-<cluster>` Synced and Healthy. Until the first site joins,
-`acm-submariner-local-cluster` stays unhealthy: the hub's gateway has no peer to connect to. This is expected.
+`acm-submariner-local-cluster` stays unhealthy ([Submariner](./submariner.md#known-issues)). This is expected.
 
 ## Bring your own
 
@@ -108,9 +92,4 @@ updates install as Red Hat publishes them. A new minor version comes with a libr
 
 ## Known issues
 
-- **Symptom:** `acm-submariner-<cluster>`, `limitador-redis` and the `maas-db` ServiceExport are unhealthy on a new hub.
-  **Cause:** Submariner has no gateway connection, and no global IP to export, until a site joins.
-  **Workaround:** None needed. They turn Healthy after the first site joins.
-- **Symptom:** After you remove a site's AI Grid labels, `acm-submariner-<cluster>` stays.
-  **Cause:** Submariner goes to every cluster registered in Argo CD, not only AI Grid sites.
-  **Workaround:** It goes when you detach the ManagedCluster.
+Submariner's known issues are on the [Submariner](./submariner.md#known-issues) page.
