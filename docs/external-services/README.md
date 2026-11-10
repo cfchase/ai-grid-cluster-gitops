@@ -30,16 +30,19 @@ the same OIDC client as the API.
 
 The MaaS Gateway listener hostname is `<prefix>.<cluster-ingress-domain>`, where
 the ingress domain starts with `apps.`. Each site's deployment file,
-`values/clusters/<cluster>/rhoai.yaml`, sets the prefix, and a target-cluster ConfigurationPolicy appends the cluster's
-ingress domain to both listeners.
-The Keycloak app runs a CronJob that lists active ingress and combined
-ManagedClusters, derives the same domain from each cluster's console claim, and
-reconciles `tenant-demo` to exactly those `https://.../oauth2/callback` URIs
-plus `http://localhost:8000/callback`.
+`values/clusters/<cluster>/rhoai.yaml`, sets the prefix, and a target-cluster
+ConfigurationPolicy appends the cluster's ingress domain to both listeners.
+When the library's Keycloak is selected (`apps/keycloak`, or
+`apps/keycloak-external-services` on this cluster), it runs a CronJob that
+lists active ingress and combined ManagedClusters, derives the same domain from
+each cluster's console claim, and reconciles its own tenant client (`tenant-demo`
+in realm `saas`) to exactly those `https://.../oauth2/callback` URIs plus
+`http://localhost:8000/callback`. With your own IdP, its client (the
+`idpClientID` input) needs the same redirect URIs (`apps/keycloak/README.md`).
 
 ## Current limits
 
-The demo Keycloak and Gateway hostnames are policy-driven. Policies write the
-database Secret and the Redis Secret, and the tenant Policy finds Keycloak on
-the labelled cluster or the hub. Using your own services means changing those
-Policies. Nothing here has run against user-owned services.
+Policies write the database Secret and the Redis Secret from the services this
+component installs. The tenant Policy takes the IdP from the `idp*` inputs.
+Using your own database or Redis means changing those Policies. Nothing here
+has run against user-owned services.
