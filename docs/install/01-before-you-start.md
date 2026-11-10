@@ -19,7 +19,7 @@ Gather the following before you run anything. Each item names the section that n
 | Combined site | 4.21 or later | Both of the preceding | 4.21.37, 6 nodes, CPU model only |
 
 - Every cluster, the hub included, needs two worker nodes that Submariner can use as gateways
-  ([ACM](components/acm.md)).
+  ([Submariner](components/submariner.md)). On compact clusters and single-node OpenShift you label them by hand.
 - A model's size sets a site's capacity. The CPU sample model in [first use](08-first-use.md) requests 4 CPU and
   8 GiB.
 - With more than one site, give the hub's Argo CD application controller 8 GiB of memory
@@ -55,7 +55,7 @@ DNS:
 | A git host the hub can read | [Section 2](02-repositories.md) | The example uses public GitHub repositories. |
 | A token that can write only the catalog repository | [Step 2](04-hub-components.md) | A GitHub fine-grained token with `contents: write` on that one repository. The console's git writer uses it. |
 | A tenant identity provider | [Section 2](02-repositories.md), [tenant identity provider](components/tenant-idp.md) | An OIDC issuer, a confidential client, and Keycloak Organizations if you use the console to create organizations. |
-| A cert-manager ClusterIssuer that can issue publicly trusted certificates by **DNS-01** on every ingress or combined site, or your own certificate for each site's MaaS hostname | [Step 4](06-join-grid.md#1-add-the-sites-values) | The MaaS gateway's load balancer serves its hostname directly, so HTTP-01 can't solve, and without a trusted certificate tenants get a certificate error. |
+| A cert-manager ClusterIssuer that can issue publicly trusted certificates by **DNS-01** on every ingress or combined site, or your own certificate for each site's MaaS hostname | [Step 4](06-join-grid.md#1-add-the-sites-values), [MaaS gateway certificate](components/maas-certificate.md) | The MaaS gateway's load balancer serves its hostname directly, so HTTP-01 can't solve, and without a trusted certificate tenants get a certificate error. |
 | `cluster-admin` on every cluster | All steps | |
 
 ## 4. Tools on your workstation

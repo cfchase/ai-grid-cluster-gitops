@@ -68,20 +68,21 @@ repository ([step 3 of section 2](02-repositories.md#3-select-components)).
 | Component | Runs on | Use ours (select) | Bring your own | Skip | Requires | Example chose |
 |---|---|---|---|---|---|---|
 | [OpenShift GitOps](components/openshift-gitops.md) | hub | `apps/gitops-config` | Yes | No | | ours |
-| [Registry pull secret and mirrors](components/pull-secret.md) | all | `apps/rhoai-prerequisites` | No | No | pre-release registry access (see [before you start](01-before-you-start.md)) | ours |
+| [OpenShift AI prerequisites: pull secret and mirror](components/rhoai-prerequisites.md) | all | `apps/rhoai-prerequisites` | Credentials only | No | pre-release registry access (see [before you start](01-before-you-start.md)) | ours |
 | [cert-manager](components/cert-manager.md) | all | `apps/cert-manager` | Yes | No | | the platform's |
+| [MaaS gateway certificate](components/maas-certificate.md) | ingress, combined | none yet | Yes, required | No | a DNS-01 ClusterIssuer or your own certificate | DNS-01 Certificate as its own app |
 | [Object storage](components/object-storage.md) | hub | `apps/object-storage/s4` or `odf` | Yes | No | S4: `apps/external-secrets` | S4 |
 | [Load balancers](components/load-balancers.md) | all | `apps/metallb` | Yes (cloud) | No | | AWS |
 | [GPU operator and NFD](components/gpu-operator.md) | inference, combined | installed by `apps/rhoai` (operators only) | Yes | CPU-only sites | | operators only, no GPU model |
 | [Cluster sign-in and admins](components/cluster-sign-in.md) | all | `cluster-config` | Yes | No | | ours |
 | [ACM](components/acm.md) | hub | `apps/acm` | Yes | No | object storage; Submariner: `apps/argo-registration` | ours |
+| [Submariner](components/submariner.md) | all | part of `apps/acm` | Only with your own ACM | No | load balancers; gateway nodes (`cluster-config`) | ours |
 | [External Secrets](components/external-secrets.md) | hub | `apps/external-secrets` | Yes | No | | ours |
 | [MaaS database](components/maas-db.md) | hub, ingress | `apps/maas-db` | No | No | replicas: `apps/ai-grid-spokes` | ours |
 | [Rate-limit counters (Redis)](components/limitador-redis.md) | hub | `apps/limitador-redis` | No | No | Submariner (`apps/acm`) | ours |
 | [External services site](../../apps/external-services/README.md) | one labelled site | `apps/external-services` | No | Yes | a cluster labelled `ai-grid/external-services=true`; without one it installs nothing | selected, no site labelled |
-| [Tenant identity provider](components/tenant-idp.md) | hub | `apps/keycloak` | Yes, any OIDC provider; the console needs Keycloak | No | ours: `apps/maas-db`, `apps/external-secrets`, cert-manager | our own Keycloak |
+| [Tenant identity provider](components/tenant-idp.md) | hub | [Keycloak](components/keycloak.md) (`apps/keycloak`) | Yes, any OIDC provider; the console needs Keycloak | No | ours: `apps/maas-db`, `apps/external-secrets`, cert-manager | our own Keycloak |
 | [Observability and usage logs](components/observability.md) | hub, sites | `apps/ai-grid-o11y`, `apps/ai-grid-usage-logs` | No | Yes | ODF object storage | skipped |
-| [OpenShift AI prerequisites](components/rhoai-prerequisites.md) | all | `apps/rhoai-prerequisites` | No | No | | ours |
 | [OpenShift AI with MaaS](components/rhoai.md) | sites | `apps/rhoai` | No | No | `apps/rhoai-prerequisites`, `apps/grid-bootstrap`, a trusted MaaS certificate per ingress site | ours |
 | [Grid bootstrap and enrollment](components/grid-bootstrap.md) | hub | `apps/grid-bootstrap` | No | No | cert-manager | ours |
 | [Status policies](components/ai-grid-policies.md) | hub | `apps/ai-grid-policies` | No | No | | ours |

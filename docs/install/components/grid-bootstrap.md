@@ -109,10 +109,8 @@ step, and never delete the `GridNetwork` or `grid-bootstrap-state` to roll back.
 
 ## Known issues
 
-**Symptom:** on a hub installed from an older library commit, the grid's invite Placements select no cluster and no
-site gets a `GridNetwork`.
-**Cause:** no ManagedClusterSetBinding `redhat-ai-grid/global` existed: the root removed the `apps/rhoai` copy before
-grid-bootstrap created its own.
-**Workaround:** pin a library commit that includes `8aa65d7` or later, which sets `createClusterSetBinding: true`, and
-keep that setting if you override `managedClusters` in `values/grid-bootstrap.yaml`.
-
+**Symptom:** the grid's invite Placements select no cluster and no site gets a `GridNetwork`.
+**Cause:** no ManagedClusterSetBinding `redhat-ai-grid/global` exists: `createClusterSetBinding` is `false`, for
+example in an override of `managedClusters` in `values/grid-bootstrap.yaml` that leaves it out.
+**Workaround:** set `createClusterSetBinding: true` (the library's default), and keep that setting if you override
+`managedClusters`.

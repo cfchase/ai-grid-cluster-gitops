@@ -60,7 +60,7 @@ You should see the script confirm the sign-in. Sign in once in the web console a
    | OpenShift version | Upgrade the cluster to 4.21 or later. |
    | default StorageClass | Annotate one StorageClass `storageclass.kubernetes.io/is-default-class=true`. |
    | cert-manager CRDs | Install the cert-manager Operator for Red Hat OpenShift, or select `apps/cert-manager` ([cert-manager](components/cert-manager.md)). |
-   | quay.io/rhoai pull secret file | Log in: `podman login quay.io` with a `quay.io/rhoai` robot token ([pull secret](components/pull-secret.md)). |
+   | quay.io/rhoai pull secret file | Log in: `podman login quay.io` with a `quay.io/rhoai` robot token ([OpenShift AI prerequisites](components/rhoai-prerequisites.md)). |
    | object storage | Expected here if you selected `apps/object-storage/s4` or `odf`: it appears in step 2. If you bring your own, create the Secret now ([object storage](components/object-storage.md)). |
 
 4. If you bring your own tenant identity provider, check its two hub objects as well:
@@ -79,7 +79,7 @@ You should see the script confirm the sign-in. Sign in once in the web console a
 The library's `bootstrap-hub.sh` checks your deployment, installs OpenShift GitOps from the library at your pinned
 commit, applies `root/` once, and seeds the
 `quay.io/rhoai` and `registry.stage.redhat.io` logins that the prerequisites Policy copies to every site
-([pull secret](components/pull-secret.md)). It reads them from the auth file and never prints them. It stops if
+([OpenShift AI prerequisites](components/rhoai-prerequisites.md)). It reads them from the auth file and never prints them. It stops if
 `../library` isn't checked out at your `libraryRevision`.
 
 ```sh

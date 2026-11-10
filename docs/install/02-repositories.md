@@ -92,7 +92,7 @@ patch (the example uses a YAML anchor, `&inputs`, so its own-apps generator gets
 | Input | Meaning | Example | Read by |
 |---|---|---|---|
 | `libraryRepoURL` | The library's repository | `https://github.com/cfchase/ai-grid-cluster-gitops.git` | every component (self-references) |
-| `libraryRevision` | The pinned commit, a full SHA | `edf8e09fb0de642ff739e0ecbb99605a297035b5` | every component |
+| `libraryRevision` | The pinned commit, a full 40-character SHA | `LIBRARY_SHA` | every component |
 | `deploymentRepoURL` | Your deployment repository | `https://github.com/my-org/ai-grid-deployment.git` | `cluster-config`, `grid-bootstrap`, `rhoai` (the `values/` files) |
 | `deploymentRevision` | Its branch or commit | `main` | the same |
 | `catalogRepoURL` | Your catalog repository | `https://github.com/my-org/ai-grid-catalog.git` | `acm-models`, `console` (git writer) |
@@ -115,7 +115,7 @@ Rules:
   both generators (28), the library URL and revision in each generator's own `repoURL` and `revision` (4), and the
   root's own check for leftover markers (1). Every one of the 32 markers is set by the steps in this section.
 - If you bring your own tenant identity provider, the `idp*` inputs point at it. If you use ours (`apps/keycloak`),
-  use the values its page gives ([tenant identity provider](components/tenant-idp.md)).
+  use the values its page gives ([Keycloak](components/keycloak.md)).
 
 ## 5. Fill in the values files
 
@@ -144,7 +144,7 @@ Your deployment repository holds three kinds of values file. The library reads t
      createClusterSetBinding: true
    ```
 
-   `createClusterSetBinding: true` is the library's default since commit `8aa65d7`: grid-bootstrap binds the ACM
+   `createClusterSetBinding: true` is the library's default: grid-bootstrap binds the ACM
    ClusterSet `global` into namespace `redhat-ai-grid`, and the root removes the `rhoai` component's copy of that
    binding. Keep the line so the choice is visible in your repository.
 

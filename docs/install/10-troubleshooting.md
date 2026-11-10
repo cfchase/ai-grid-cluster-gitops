@@ -22,14 +22,14 @@ Each entry gives the symptom, the cause and the fix. Component pages list more u
 26.6 reject.
 
 **Fix:** run community Keycloak 26.8.0 for tenants, as the library and the example do
-([tenant identity provider](components/tenant-idp.md)).
+([Keycloak](components/keycloak.md#known-issues)).
 
 ## Tenants get certificate errors on the MaaS hostname
 
 **Cause:** the MaaS gateway presents its in-cluster service certificate on the public hostname.
 
 **Fix:** give the gateway a trusted certificate through the site's values file
-([step 4, part 1](06-join-grid.md#1-add-the-sites-values)).
+([step 4, part 1](06-join-grid.md#1-add-the-sites-values); [MaaS gateway certificate](components/maas-certificate.md)).
 
 ## Every model call returns `403`, "access denied to requested subscription"
 
@@ -50,7 +50,7 @@ endpoint.
 **Cause:** the pod runs `kc.sh import` before `kc.sh start`, and the import refuses to migrate an older database.
 
 **Fix:** use `strategy: Recreate`, back up the database before a version change, and see
-[tenant identity provider](components/tenant-idp.md#known-issues).
+[Keycloak](components/keycloak.md#known-issues).
 
 ## Calls fail with `401` or `503` after the IdP was down
 
@@ -96,4 +96,4 @@ it.
 
 **Cause:** they wait for the first site to join.
 
-**Fix:** none needed before step 4. After a site joins, check the site's Submariner gateways ([ACM](components/acm.md)).
+**Fix:** none needed before step 4. After a site joins, check the site's Submariner gateways ([Submariner](components/submariner.md)).
