@@ -32,8 +32,12 @@ A replacement IdP must provide:
   the portal's sign-in.
 - **The claims** in the access token: `token_use: access` (the AITenant's
   `accessTokenPurposeClaim`), `org_id` and `org_name` for the user's
-  organization, `roles`, and `groups` as `<org_id>/<group>`. Subscriptions
-  match those group names.
+  organization, `roles`, and `groups` as plain names (such as
+  `ai-grid-users`). MaaS prefixes each group with `org_id` itself and drops any
+  group that already starts with an organization ID, so subscriptions name
+  `<org_id>/<group>` while the token carries `<group>` (flat claims, ODH ADR PR
+  181; seen on proto-hub, where pre-qualified groups were refused). Both the
+  console and this repository's MaaS objects use the qualified form.
 - **Organizations, for the console**: the provider console creates and lists
   organizations through the Keycloak admin API (Keycloak Organizations). A
   replacement that the console manages is a Keycloak realm
