@@ -37,6 +37,7 @@ replacements:
           - spec.template.spec.sources.[ref=values].targetRevision
           - spec.template.spec.sources.[path=apps/rhoai/gateway-hostname].targetRevision
           - spec.template.spec.sources.[path=apps/rhoai/catalog].targetRevision
+          - spec.template.metadata.labels.ai-grid/library-revision
   - source:
       kind: ConfigMap
       name: library-inputs
