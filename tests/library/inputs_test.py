@@ -37,6 +37,9 @@ Checks, each reported as ok or FAIL:
   object-storage   ACM renders no bucket; apps/object-storage offers ODF and S4,
                    each its own component, S4's credentials from Password
                    generators, never literal Secrets
+  idp              the tenant Policy reads the IdP inputs (issuer, client,
+                   client-secret Secret, CA ConfigMap), names no library
+                   Keycloak, and its ServiceAccount can read both inputs
 
 Run: bash tests/library/inputs-test.sh   (needs python3 with PyYAML, kustomize)
 """
@@ -534,6 +537,81 @@ def object_storage(inputs):
             fail("s4: credentials must come from Password generators, got %s" % generators)
 
 
+IDP_FORBIDDEN = ('"maas-db"', "keycloak-secrets", "realms/saas", "tenant-demo")
+
+
+def strings(node):
+    if isinstance(node, dict):
+        for value in node.values():
+            yield from strings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from strings(value)
+    elif isinstance(node, str):
+        yield node
+
+
+def rendered_rhoai_hub(inputs):
+    with open(os.path.join(ROOT, "apps", "rhoai", "application.yaml")) as handle:
+        app = yaml.safe_load(substitute(handle.read(), inputs))
+    output, error = kustomize_build(os.path.join(ROOT, "apps", "rhoai", "hub"),
+                                    app["spec"]["source"]["kustomize"]["patches"])
+    if error:
+        fail("apps/rhoai/hub: kustomize build failed: %s" % error.splitlines()[-1])
+        return []
+    return [doc for doc in yaml.safe_load_all(output) if doc]
+
+
+@check("idp")
+def idp(inputs):
+    """The tenant IdP is an input: the tenant Policy names no Keycloak."""
+    for path in library_files((os.path.join("apps", "rhoai"),)):
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+        for word in IDP_FORBIDDEN:
+            if word in text:
+                fail("%s names %s, the library's Keycloak" % (rel(path), word))
+    documents = rendered_rhoai_hub(inputs)
+    policy = next((doc for doc in documents if doc["kind"] == "Policy"
+                   and doc["metadata"]["name"] == "rhoai-ingress-clusters"), None)
+    if not policy:
+        fail("apps/rhoai/hub renders no Policy rhoai-ingress-clusters")
+        return
+    text = "\n".join(strings(policy))
+    for key in ("idpIssuerURL", "idpClientID"):
+        if inputs[key] not in text:
+            fail("the tenant Policy doesn't carry %s (%s)" % (key, inputs[key]))
+    secret_template = 'fromSecret "%s" "%s" "%s"' % (inputs["idpClientSecretNamespace"],
+                                                   inputs["idpClientSecretName"], inputs["idpClientSecretKey"])
+    if secret_template not in text:
+        fail("the tenant Policy doesn't read the client secret input: %s" % secret_template)
+    ca_template = 'fromConfigMap "%s" "%s" "%s"' % (inputs["idpCANamespace"], inputs["idpCAName"], inputs["idpCAKey"])
+    if ca_template not in text:
+        fail("the tenant Policy doesn't read the CA input: %s" % ca_template)
+    # Hub templates resolve as the Policy's ServiceAccount, which must be able
+    # to read the input Secret and ConfigMap where they are.
+    account = policy["spec"]["hubTemplateOptions"]["serviceAccountName"]
+    bound = {doc["metadata"]["namespace"]: doc["roleRef"]["name"] for doc in documents
+             if doc["kind"] == "RoleBinding"
+             and {"kind": "ServiceAccount", "name": account, "namespace": "redhat-ai-grid"} in doc.get("subjects", [])}
+    roles = {(doc["metadata"]["namespace"], doc["metadata"]["name"]): doc for doc in documents if doc["kind"] == "Role"}
+    for namespace, resource, name in ((inputs["idpClientSecretNamespace"], "secrets", inputs["idpClientSecretName"]),
+                                      (inputs["idpCANamespace"], "configmaps", inputs["idpCAName"])):
+        role = roles.get((namespace, bound.get(namespace)))
+        rules = (role or {}).get("rules", [])
+        if not any(resource in rule.get("resources", []) and "get" in rule.get("verbs", [])
+                   and name in rule.get("resourceNames", [name]) for rule in rules):
+            fail("ServiceAccount %s can't get %s %s in namespace %s" % (account, resource, name, namespace))
+        # ACM's dependency watcher lists and watches a named object with a
+        # metadata.name field selector, which RBAC authorizes by resourceNames,
+        # so no rule needs the whole namespace (the input namespace may hold
+        # other Secrets, such as an IdP's admin credentials).
+        for rule in rules:
+            if rule.get("resourceNames") != [name]:
+                fail("Role %s/%s: rule %s isn't limited to resourceNames [%s]"
+                     % (namespace, role["metadata"]["name"], rule, name))
+
+
 @check("bare-inputs")
 def bare_inputs():
     found = 0
@@ -562,6 +640,7 @@ def main():
     deployment_values()
     admins()
     object_storage(inputs)
+    idp(inputs)
     failed = sum(1 for _, ok in results if not ok)
     print("inputs tests: %d ok, %d failed" % (len(results) - failed, failed))
     return 1 if failed else 0
