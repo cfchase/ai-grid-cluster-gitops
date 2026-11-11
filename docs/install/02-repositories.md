@@ -84,7 +84,7 @@ example's list, by item:
 | [0. Platform services](hub/00-platform-services.md#select-it) | `apps/gitops-config`, `cluster-config`, `apps/external-secrets` | Add `apps/cert-manager` if the hub has no cert-manager. |
 | [1. ACM](hub/01-acm.md#select-it) | `apps/acm`, `apps/object-storage/s4` | Use `apps/object-storage/odf` or your own bucket instead of S4; add `apps/metallb` for bare-metal sites. |
 | [2. Grid](hub/02-grid.md#select-it) | `apps/grid-bootstrap`, `apps/ai-grid-policies` | Never. |
-| [3. MaaS shared services](hub/03-maas-shared-services.md#select-it) | `apps/maas-db`, `apps/limitador-redis`, `apps/external-services` | `apps/external-services` installs nothing until a cluster is labelled; you can leave it out. |
+| [3. MaaS shared services](hub/03-maas-shared-services.md#select-it) | `apps/maas-db`, `apps/limitador-redis`, `apps/external-services` | To run them on a site instead of the hub, keep `apps/external-services` and label that site ([run them on a site](hub/03-maas-shared-services.md#run-the-shared-services-on-a-site)); otherwise you can leave it out. |
 | [4. Tenant identity](hub/04-tenant-identity.md#select-it) | None: its own IdP is in `apps/tenant-idp.yaml` | Add `apps/keycloak` to use the library's Keycloak. |
 | [5. Provider console and model delivery](hub/05-console-and-model-delivery.md#select-it) | `apps/acm-models`, `apps/console` | Leave out `apps/console` with an IdP that isn't Keycloak. |
 | [6. Site delivery](hub/06-site-delivery.md#select-it) | `apps/ai-grid-spokes`, `apps/argo-registration`, `apps/rhoai`, `apps/rhoai-prerequisites` | Never. |

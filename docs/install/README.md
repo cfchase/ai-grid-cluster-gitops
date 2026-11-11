@@ -26,15 +26,19 @@ to the sites.
                   ^                                                  ^
                   |  ACM policies, Argo CD applications, Submariner  |
                   +---------------------- hub -----------------------+
-        ACM, Argo CD, grid enrollment, MaaS database, tenant identity provider,
-        provider console
+        control plane: ACM, Argo CD, grid enrollment, site and model delivery,
+                       provider console
+        shared services (here by default, or on a site, or yours):
+                       MaaS database and Redis, tenant identity provider
 ```
 
 ## How the install is organized: two parts
 
-- **[Hub and external dependencies](hub/README.md):** what the hub runs, grouped into eight items in install order, from
-  the platform services to observability. Each item's page gives your options, what the example chose, what it
-  requires, and the lines that select it in your deployment repository.
+- **[Hub and external dependencies](hub/README.md):** what the hub runs, grouped into eight items in install order and
+  split into two kinds: the control plane, which must run on the ACM hub, and the shared services the sites call (the
+  MaaS database and Redis, and the tenant identity provider), which run on the hub by default but can run on one site
+  or be yours. Each item's page gives your options, what the example chose, what it requires, and the lines that
+  select it in your deployment repository.
 - **[Spokes](spokes/README.md):** what each site brings, what you choose per site, and what the hub installs there. The
   hub installs every site from the same Helm chart in the site's role, so a site has almost no component choices.
 
@@ -66,16 +70,23 @@ library pin.
 Decide the hub's eight items before you start. Each item's selection lines go in your deployment repository
 ([select components](02-repositories.md#3-select-components)).
 
+**Control plane.** These items must run on the ACM hub:
+
 | Item | Options | Requires | Example chose |
 |---|---|---|---|
 | [0. Platform services](hub/00-platform-services.md): OpenShift GitOps, cert-manager, External Secrets, cluster sign-in and admins, a default StorageClass | Each: ours, or the platform's or yours | A git host the hub can read; `cluster-admin` on the hub | Ours, except the platform's cert-manager |
-| [1. ACM, the multicluster engine and Submariner](hub/01-acm.md) | Ours, or your existing ACM hub (partly) | Object storage (S4, ODF or yours); a load balancer and two Submariner gateway nodes per cluster | Ours, with S4 |
+| [1. ACM, the multicluster engine and Submariner](hub/01-acm.md) | Ours, or your existing ACM hub (partly) | Object storage (S4 or ODF on the hub, or any S3 bucket); a load balancer and two Submariner gateway nodes per cluster | Ours, with S4 |
 | [2. Grid](hub/02-grid.md): bootstrap, enrollment, status policies | No choice | cert-manager (0), ACM (1) | Ours |
-| [3. MaaS shared services](hub/03-maas-shared-services.md): MaaS database primary, rate-limit Redis | No choice | Submariner, to export them (1) | Ours |
-| [4. Tenant identity](hub/04-tenant-identity.md) | Our Keycloak, or your OIDC provider | Ours: MaaS database (3), cert-manager and External Secrets (0). Yours: an OIDC issuer, a confidential client and its CA | Its own Keycloak |
 | [5. Provider console and model delivery](hub/05-console-and-model-delivery.md) | Console optional; model delivery required | Console: Keycloak with Organizations (4); a token that can write only the catalog repository | Both |
 | [6. Site delivery](hub/06-site-delivery.md): site Placements, Argo CD registration, registry access | No choice | ACM (1); the `quay.io/rhoai` and stage logins (pre-release) | Ours |
 | [7. Observability and usage logs](hub/07-observability.md) | On or off | ODF object storage | Off |
+
+**Shared services.** The sites call these over the network, so you also choose where they run:
+
+| Item | Where it can run | Requires | Example chose |
+|---|---|---|---|
+| [3. MaaS shared services](hub/03-maas-shared-services.md): MaaS database primary, rate-limit Redis | The hub, or one site labelled `ai-grid/external-services=true`. Not yet your own ([known gaps](appendix-c-gaps.md)). | Submariner, to export them (1) | Ours, on the hub |
+| [4. Tenant identity](hub/04-tenant-identity.md) | Our Keycloak on the hub or that site, or your OIDC provider anywhere the sites reach | Ours: MaaS database (3), cert-manager and External Secrets (0). Yours: an OIDC issuer, a confidential client and its CA | Its own Keycloak, on the hub |
 
 For each site you choose only its role (`ingress`, `inference` or `combined`) and, for an ingress or combined site, the
 MaaS hostname prefix and a certificate for it. Each site brings OpenShift 4.21 or later, a default StorageClass, a load

@@ -1,8 +1,10 @@
 # MaaS shared services
 
-MaaS on every ingress or combined site shares two services that run on the hub: the MaaS database primary, the system
-of record for API keys and subscriptions, and the Redis that holds the rate-limit counters. Submariner exports both to
-the sites.
+MaaS on every ingress or combined site shares two services: the MaaS database primary, the system of record for API
+keys and subscriptions, and the Redis that holds the rate-limit counters. They aren't part of the hub's control plane:
+the sites reach them through Submariner, so they run on the hub by default or on one labelled site
+([run them on a site](#run-the-shared-services-on-a-site)). Running your own isn't supported yet
+([known gaps](../appendix-c-gaps.md)); what MaaS reads from each is in [MaaS external services](../../external-services/README.md).
 
 | | |
 |---|---|
