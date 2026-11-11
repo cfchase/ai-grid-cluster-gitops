@@ -18,7 +18,7 @@ For ours:
 ```
 
 For yours, select nothing from the library: run your IdP, or add it as your own app in your deployment repository's
-`apps/`, as the example does. Then set the `idp*` inputs ([set every input](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/02-repositories.md#4-set-every-input)).
+`apps/`, as the example does. Then set the `idp*` inputs ([set every input](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#4-set-every-input)).
 
 ## Tenant identity provider
 
@@ -44,7 +44,7 @@ components to select and the `idp*` values to set.
 ### Bring your own
 
 The verified install used its own Keycloak: see the worked example's
-[`idp/`](https://github.com/cfchase/ai-grid-deployment-proto/tree/main/idp). Your IdP must provide:
+[`idp/`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/tree/main/idp). Your IdP must provide:
 
 | Requirement | Detail |
 |---|---|
@@ -152,7 +152,7 @@ The verified install brought its own IdP instead, so every step in this section 
    example tenant realms with test users. For anything but a test, use `overlays/core` (only the `saas` realm). The
    root reads the library's `application.yaml` as is, so leave `apps/keycloak` out of `files` and add your own
    Application in your deployment's `apps/` (read by your root's own-apps generator,
-   [section 2](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/02-repositories.md#3-select-components)) with `repoURL: '@libraryRepoURL@'`, `targetRevision: '@libraryRevision@'`
+   [section 2](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#3-select-components)) with `repoURL: '@libraryRepoURL@'`, `targetRevision: '@libraryRevision@'`
    and `path: apps/keycloak/overlays/core`, otherwise matching the library's.
 3. Set the `idp*` inputs in your root's generator `values`:
 
@@ -172,7 +172,7 @@ The verified install brought its own IdP instead, so every step in this section 
 4. After the console's Route exists, run `apps/console/create-secrets.sh` from the library checkout. Its defaults,
    `KEYCLOAK_NAMESPACE=maas-db` and `KEYCLOAK_REALM=saas`, are this Keycloak's.
 
-Use MaaS hostname prefix `maas` on every ingress or combined site ([join each site to the grid](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/06-join-grid.md#1-add-the-sites-values)):
+Use MaaS hostname prefix `maas` on every ingress or combined site ([join each site to the grid](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/06-join-grid.md#1-add-the-sites-values)):
 a CronJob keeps `tenant-demo`'s redirect URIs equal to `https://maas.<apps domain>/oauth2/callback` for every ingress or
 combined site. Realms are imported on first start only; later edits to `saas-realm.json` reach the realm through
 PostSync hooks. Details: [`apps/keycloak/README.md`](../../../apps/keycloak/README.md).
@@ -216,9 +216,9 @@ The library's Keycloak image moves with the library pin. Read Known issues befor
   **Cause:** Keycloak 26.8 didn't apply the realm import's user profile.
   **Workaround:** Set the realm's `unmanagedAttributePolicy` to `ADMIN_EDIT` through the admin API, as the worked
   example's
-  [`scripts/create-test-tenant.sh`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/scripts/create-test-tenant.sh)
+  [`scripts/create-test-tenant.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/create-test-tenant.sh)
   does.
 - **Symptom:** None; a security consideration with the library's Keycloak.
   **Cause:** Its client secret is a key in `maas-db/keycloak-secrets`, which also holds Keycloak's admin password, and
   the tenant Policy may read that whole Secret.
-  **Workaround:** None in the library yet. See [Gaps](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/appendix-c-gaps.md).
+  **Workaround:** None in the library yet. See [Gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md).

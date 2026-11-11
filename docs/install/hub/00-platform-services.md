@@ -15,13 +15,13 @@ library's, or the one your platform already runs.
 Requires:
 
 - A git host the hub's Argo CD can read, with your deployment and catalog repositories
-  ([create your repositories](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/02-repositories.md)).
-- `cluster-admin` on the hub ([before you start](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/01-before-you-start.md#3-accounts-and-credentials)).
+  ([create your repositories](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md)).
+- `cluster-admin` on the hub ([before you start](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/01-before-you-start.md#3-accounts-and-credentials)).
 
 ## Select it
 
 Add these lines to the `files` list in your `root/kustomization.yaml`
-([select components](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/02-repositories.md#3-select-components)):
+([select components](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#3-select-components)):
 
 ```yaml
 - path: apps/gitops-config/application.yaml
@@ -48,7 +48,7 @@ your deployment repository, and the catalog. Every other component depends on it
 
 1. Install the operator and the root with the library's
    [`scripts/bootstrap-hub.sh`](../../../scripts/bootstrap-hub.sh), described in
-   [Prepare the hub](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/03-prepare-hub.md). For OpenShift GitOps it does the following, from the library at the
+   [Prepare the hub](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/03-prepare-hub.md). For OpenShift GitOps it does the following, from the library at the
    commit your root pins:
 
    1. Applies `bootstrap/namespace.yaml`, `bootstrap/gitops-operator-group.yaml` and
@@ -342,7 +342,7 @@ them, on the hub and on each site. If the identity provider you sign in with fai
 an existing identity provider your platform uses.
 
 The library's [`scripts/add-htpasswd-admin.sh`](../../../scripts/add-htpasswd-admin.sh) does this
-([prepare the hub](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/03-prepare-hub.md#1-add-a-break-glass-admin)):
+([prepare the hub](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/03-prepare-hub.md#1-add-a-break-glass-admin)):
 
 ```sh
 ../library/scripts/add-htpasswd-admin.sh --kubeconfig KUBECONFIG --password-file PASSWORD_FILE
@@ -439,7 +439,7 @@ repository: adding or removing a name takes effect on every cluster at the next 
 ## Default StorageClass
 
 The hub needs a default StorageClass: several components claim volumes without naming a class. The hub check reports it
-as `default StorageClass` ([prepare the hub](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/03-prepare-hub.md#2-check-the-infrastructure)). If it's missing,
+as `default StorageClass` ([prepare the hub](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/03-prepare-hub.md#2-check-the-infrastructure)). If it's missing,
 annotate one StorageClass `storageclass.kubernetes.io/is-default-class=true`.
 
 | Claim | Size | Component |

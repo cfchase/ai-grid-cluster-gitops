@@ -10,17 +10,17 @@ the usual way to issue its certificate.
 | Runs on | ingress and combined sites |
 | Library component | None yet: a values override in `values/clusters/SITE/rhoai.yaml` plus your own `Certificate` |
 | Choices | Bring your own: a DNS-01 ClusterIssuer on the site, or your own certificate. Use ours isn't available yet. |
-| Example chose | A DNS-01 Certificate delivered as its own app ([`apps/site-b-maas-tls.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/apps/site-b-maas-tls.yaml)) |
+| Example chose | A DNS-01 Certificate delivered as its own app ([`apps/site-b-maas-tls.yaml`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/apps/site-b-maas-tls.yaml)) |
 
 ## Use ours
 
-Not available: the library has no input for this certificate yet ([known gaps](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/appendix-c-gaps.md)).
+Not available: the library has no input for this certificate yet ([known gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)).
 
 ## Bring your own
 
 You need a cert-manager ClusterIssuer on each ingress or combined site that issues publicly trusted certificates by
 **DNS-01**, or a certificate of your own for each site's MaaS hostname
-([before you start](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/01-before-you-start.md#3-accounts-and-credentials)). On each such site:
+([before you start](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/01-before-you-start.md#3-accounts-and-credentials)). On each such site:
 
 1. Add a `Certificate` in namespace `openshift-ingress` for `HOSTNAME_PREFIX.APPS_DOMAIN`, with
    `secretName: maas-gateway-public-tls`, to your deployment repository.
@@ -28,10 +28,10 @@ You need a cert-manager ClusterIssuer on each ingress or combined site that issu
 3. Point the gateway's HTTPS listener at the Secret in `values/clusters/SITE/rhoai.yaml`. Helm replaces lists whole, so
    give both of the chart's listeners.
 
-The templates for all three are in [join each site to the grid, part 1](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/06-join-grid.md#1-add-the-sites-values); the example deployment's
-versions are [`apps/site-b-maas-tls.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/apps/site-b-maas-tls.yaml),
-[`sites/site-b/maas-tls/certificate.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/sites/site-b/maas-tls/certificate.yaml)
-and [`values/clusters/site-b/rhoai.yaml`](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/values/clusters/site-b/rhoai.yaml).
+The templates for all three are in [join each site to the grid, part 1](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/06-join-grid.md#1-add-the-sites-values); the example deployment's
+versions are [`apps/site-b-maas-tls.yaml`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/apps/site-b-maas-tls.yaml),
+[`sites/site-b/maas-tls/certificate.yaml`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/sites/site-b/maas-tls/certificate.yaml)
+and [`values/clusters/site-b/rhoai.yaml`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/values/clusters/site-b/rhoai.yaml).
 
 If you bring a certificate without cert-manager, create Secret `openshift-ingress/maas-gateway-public-tls`
 (`kubernetes.io/tls`) on the site and skip the Certificate and its Application.

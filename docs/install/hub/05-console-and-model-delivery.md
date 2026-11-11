@@ -8,7 +8,7 @@ sites by role.
 |---|---|
 | Options | The console is optional. Model delivery is required to serve models. |
 | Example chose | Both; no sample models |
-| Requires | Console: a Keycloak tenant IdP with Organizations ([tenant identity](04-tenant-identity.md)), and a token that can write only the catalog repository. Model delivery: a catalog repository ([create your repositories](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/02-repositories.md)) and [site delivery](06-site-delivery.md). |
+| Requires | Console: a Keycloak tenant IdP with Organizations ([tenant identity](04-tenant-identity.md)), and a token that can write only the catalog repository. Model delivery: a catalog repository ([create your repositories](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md)) and [site delivery](06-site-delivery.md). |
 
 ## Select it
 
@@ -194,7 +194,7 @@ Application deletes its MaaS objects with it, so no tenant access outlives it. T
 
 #### Verify
 
-After the console's first model and subscription ([First use](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/08-first-use.md)), on the hub:
+After the console's first model and subscription ([First use](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/08-first-use.md)), on the hub:
 
 ```sh
 oc -n openshift-gitops get applicationsets.argoproj.io | grep acm-models-catalog

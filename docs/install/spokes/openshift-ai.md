@@ -53,7 +53,7 @@ that runs MaaS. [Model delivery](../hub/05-console-and-model-delivery.md#model-d
    ConfigMap holding the CA that signs the issuer's certificate. [Tenant identity provider](../hub/04-tenant-identity.md#tenant-identity-provider) covers both. The
    component reads only those two objects, by name, through a dedicated ServiceAccount.
 
-4. Label the site ([Join the grid](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/06-join-grid.md)). The `rhoai` ApplicationSet then generates one Application
+4. Label the site ([Join the grid](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/06-join-grid.md)). The `rhoai` ApplicationSet then generates one Application
    per site, named `rhoai-SITE-HASH`, from three layers: the library's `apps/rhoai/values.yaml`, the role file
    `apps/rhoai/roles/ROLE.yaml`, and your `values/clusters/SITE/rhoai.yaml`.
 
@@ -139,7 +139,7 @@ calls return 401.
 **Cause:** OpenShift AI 3.6 nightlies before FBC `d0ee30a` send the
 portal's token in the wrong header ([RHAI-21554](https://redhat.atlassian.net/browse/RHAI-21554)).
 **Workaround:** pin FBC `d0ee30a` or later; until then, create API keys through the MaaS API
-([troubleshooting](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/10-troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).
+([troubleshooting](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/10-troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).
 
 **Symptom:** about one call in six fails the TLS handshake or hangs.
 **Cause:** an address of the gateway's load balancer is in a zone with no gateway pod (infrastructure).
@@ -217,7 +217,7 @@ in the table. The chart's Subscriptions use the same package names and namespace
 Subscription with another name for the same package in the same namespace can conflict. *(Unverified.)*
 
 To stop the chart from managing them on a site, set both off in that site's `values/clusters/SITE/rhoai.yaml`. The
-chart lets explicit values override the profile, but the library doesn't test this ([gaps](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/appendix-c-gaps.md)).
+chart lets explicit values override the profile, but the library doesn't test this ([gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)).
 *(Unverified.)*
 
 ```yaml

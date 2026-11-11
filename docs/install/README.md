@@ -11,7 +11,7 @@ library commit your deployment pins.
 ## Install AI Grid
 
 The install procedure lives in the deployment template,
-[`cfchase/ai-grid-deployment-proto`](https://github.com/cfchase/ai-grid-deployment-proto). To install, create your
+[`ai-grid-cloud/ai-grid-deployment-template`](https://github.com/ai-grid-cloud/ai-grid-deployment-template). To install, create your
 deployment repository from it with **Use this template** on GitHub, then follow its
-[install guide](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/README.md). The guide links
+[install guide](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/README.md). The guide links
 to the pages here at your pinned library commit.

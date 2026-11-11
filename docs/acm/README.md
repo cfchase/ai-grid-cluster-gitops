@@ -1,6 +1,6 @@
 # Getting started
 
-The [install guide](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/README.md) and the
+The [install guide](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/README.md) and the
 [component reference](../install/README.md) replace this page.
 
 The pages under this directory describe the earlier self-syncing layout, where a fork of this repository was the

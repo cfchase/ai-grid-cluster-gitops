@@ -2,7 +2,7 @@
 
 ## Inputs
 
-The 14 inputs, with their meaning, examples and readers, are in [the repositories page, part 4](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/02-repositories.md#4-set-every-input).
+The 14 inputs, with their meaning, examples and readers, are in [the repositories page, part 4](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#4-set-every-input).
 Rules: every input is required, non-empty, and free of `"`, `'`, `\` and `@`. The library's `bootstrap/hub/README.md`
 documents the same contract for library maintainers.
 
