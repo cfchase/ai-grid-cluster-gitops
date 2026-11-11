@@ -77,7 +77,7 @@ component README has an end-to-end read check that returns `200`.
 
 Not supported yet. The console reads `dashboard-*` PersesDashboards from project `redhat-ods-monitoring`
 (`apps/console/application.yaml`, `perses.project`), and sites send usage records to the hub Route `usage-logs` in
-`redhat-ods-monitoring`. Neither has an input. See [Gaps](../appendix-c-gaps.md).
+`redhat-ods-monitoring`. Neither has an input. See [Gaps](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/appendix-c-gaps.md).
 
 ## Skip
 

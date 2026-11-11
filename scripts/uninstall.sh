@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Uninstall AI Grid: each site, then the hub. The end state is each cluster as
-# it was before install step 1 (docs/install/09-operate.md, "Uninstall").
+# it was before install step 1 (the deployment template's docs/install/09-operate.md, "Uninstall").
 #
 #   uninstall.sh --step site --hub-kubeconfig PATH --expect-hub-api URL \
 #                --site NAME --site-kubeconfig PATH --expect-site-api URL \

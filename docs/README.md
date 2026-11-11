@@ -1,6 +1,7 @@
 # Docs
 
-- [Install guide](install/README.md): blank clusters to a tenant calling a model, component by component.
+- [Component reference](install/README.md): every hub item and what each site gets. The install procedure is in the
+  deployment template's [install guide](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/README.md).
 - [MaaS smoke test](maas-oidc-smoke/README.md): an end to end check as a tenant user.
 - [MaaS external services](external-services/README.md): what MaaS needs from services the user owns.
 - Earlier self-syncing layout (reference): [hub onboarding](acm/hub-onboarding/README.md),

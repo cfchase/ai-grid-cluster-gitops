@@ -17,7 +17,7 @@ status policies, which report each site's state back to the hub for the provider
 ```
 
 Also add `values/grid-bootstrap.yaml` to your deployment repository
-([fill in the values files](../02-repositories.md#5-fill-in-the-values-files)).
+([fill in the values files](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/02-repositories.md#5-fill-in-the-values-files)).
 
 ## Grid bootstrap
 

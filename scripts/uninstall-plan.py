@@ -25,7 +25,7 @@ Groups, in the order an uninstall deletes them:
   operators         OLM Subscriptions and OperatorGroups (their CSVs at run time)
   namespaces        the namespaces themselves
 
-Never planned: CustomResourceDefinitions (kept, see docs/install/09-operate.md),
+Never planned: CustomResourceDefinitions (kept, see the deployment template's docs/install/09-operate.md),
 Argo CD's own Applications, ApplicationSets and ArgoCD (the uninstall stops
 Argo CD first and removes it last), anything in a protected namespace, the
 protected namespaces themselves, openshift-*, kube-* and default namespaces,

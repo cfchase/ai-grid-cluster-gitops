@@ -8,7 +8,7 @@ ApplicationSet, and the registry access and namespaces every cluster needs befor
 |---|---|
 | Options | No choice |
 | Example chose | Ours |
-| Requires | [ACM](01-acm.md); OpenShift GitOps's settings (`apps/gitops-config`, [platform services](00-platform-services.md)); the `quay.io/rhoai` and `registry.stage.redhat.io` logins (pre-release, [before you start](../01-before-you-start.md)); the grid ([grid bootstrap](02-grid.md)) and the tenant identity inputs ([tenant identity](04-tenant-identity.md)) for OpenShift AI |
+| Requires | [ACM](01-acm.md); OpenShift GitOps's settings (`apps/gitops-config`, [platform services](00-platform-services.md)); the `quay.io/rhoai` and `registry.stage.redhat.io` logins (pre-release, [before you start](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/01-before-you-start.md)); the grid ([grid bootstrap](02-grid.md)) and the tenant identity inputs ([tenant identity](04-tenant-identity.md)) for OpenShift AI |
 
 ## Select it
 
@@ -20,7 +20,7 @@ ApplicationSet, and the registry access and namespaces every cluster needs befor
 ```
 
 Registry access can't be skipped yet: the `quay.io/rhoai` pull secret, the catalog pull secret and the image mirror ride
-in `apps/rhoai-prerequisites` with what every install needs ([known gaps](../appendix-c-gaps.md)).
+in `apps/rhoai-prerequisites` with what every install needs ([known gaps](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/appendix-c-gaps.md)).
 
 ## OpenShift AI on the sites
 
@@ -50,7 +50,7 @@ components all select sites through these Placements.
    CD's `global` ManagedClusterSetBinding in `openshift-gitops` comes from `apps/gitops-config`
    ([OpenShift GitOps](00-platform-services.md#openshift-gitops)), so select that too.
 
-2. Make a cluster a site by labelling its ManagedCluster on the hub ([Join the grid](../06-join-grid.md)):
+2. Make a cluster a site by labelling its ManagedCluster on the hub ([Join the grid](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/06-join-grid.md)):
 
    ```sh
    oc label managedcluster SITE ai-grid/enabled=true ai-grid/role=ROLE location=LOCATION
@@ -114,7 +114,7 @@ the `maas-db` replica's Application about 3 minutes later. The console shows the
 
 - Not withdrawn: grid membership. On the tested site the GridSite stayed `Connected` and `Available` for the whole
   7 minutes it was unlabelled. Withdrawing a site from the grid isn't designed yet
-  ([known gaps](../appendix-c-gaps.md)).
+  ([known gaps](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/appendix-c-gaps.md)).
 - Stays installed, no longer managed: OpenShift AI, the provider gateway and the catalog's models, because the
   ApplicationSets set `preserveResourcesOnDeletion`.
 - Deleted: the site's `maas-db` replica, and the catalog's MaaS objects and subscriptions on that site, so no tenant
@@ -150,7 +150,7 @@ Both components move with the library pin and need no manual step.
 > runtimes included, to `registry.stage.redhat.io` with `NeverContactSource`. You need logins for both registries,
 > which Red Hat gives only to early-access partners; ask your Red Hat contact. Without a stage login, model images fail
 > to pull on every site. What changes at general availability (the catalog source, the mirror, which logins you need)
-> isn't decided in the library yet ([known gaps](../appendix-c-gaps.md)).
+> isn't decided in the library yet ([known gaps](https://github.com/cfchase/ai-grid-deployment-proto/blob/main/docs/install/appendix-c-gaps.md)).
 
 This component delivers, through ACM Policies on the hub, what every managed cluster needs before OpenShift AI installs
 there: protected namespaces, the model namespace and its NetworkPolicies, the image mirror, the catalog pull secret and
